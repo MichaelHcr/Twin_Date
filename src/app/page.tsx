@@ -1,3 +1,7 @@
+import { Suspense } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+
 export default function Home() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 bg-zinc-50 px-6 py-24 text-center font-sans dark:bg-black">
@@ -8,9 +12,39 @@ export default function Home() {
         Your AI twin goes on the first chat for you, then hands you a shortlist
         of people worth meeting.
       </p>
-      <span className="rounded-full border border-zinc-300 px-4 py-1 text-sm text-zinc-500 dark:border-zinc-700">
-        Coming soon
-      </span>
+      {/* The page shell is static; only the login status is per-visitor. */}
+      <Suspense fallback={<div className="h-9" />}>
+        <AuthStatus />
+      </Suspense>
     </main>
+  );
+}
+
+async function AuthStatus() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return (
+      <Link
+        href="/login"
+        className="rounded-full bg-black px-5 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+      >
+        Sign in or create an account
+      </Link>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <p className="text-sm text-zinc-500">Signed in as {user.email}</p>
+      <form action="/auth/signout" method="post">
+        <button className="rounded-full border border-zinc-300 px-4 py-1 text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
+          Sign out
+        </button>
+      </form>
+    </div>
   );
 }
