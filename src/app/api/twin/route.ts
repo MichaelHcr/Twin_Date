@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { loadTwinPrompt, runTwinTurn } from "@/lib/agents/twin";
 import { createClient } from "@/lib/supabase/server";
+import { describeAgentError } from "@/lib/agents/errors";
 
 export const maxDuration = 60;
 
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ replies });
   } catch (error) {
     console.error("Twin turn failed:", error);
-    return NextResponse.json({ error: "Your twin couldn't reply just now. Press Retry." }, { status: 502 });
+    const { status, message } = describeAgentError(error, "Your twin");
+    return NextResponse.json({ error: message }, { status });
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildPersona } from "@/lib/agents/persona-builder";
 import { createClient } from "@/lib/supabase/server";
+import { describeAgentError } from "@/lib/agents/errors";
 
 // Building a persona card reads the whole interview, so allow up to two minutes.
 export const maxDuration = 120;
@@ -27,9 +28,7 @@ export async function POST() {
     return NextResponse.json({ persona });
   } catch (error) {
     console.error("Persona build failed:", error);
-    return NextResponse.json(
-      { error: "We couldn't build your twin just now. Please try again." },
-      { status: 502 },
-    );
+    const { status, message } = describeAgentError(error, "The Persona Builder");
+    return NextResponse.json({ error: message }, { status });
   }
 }

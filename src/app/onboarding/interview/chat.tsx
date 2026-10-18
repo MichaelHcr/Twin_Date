@@ -47,13 +47,19 @@ export function Chat({ initialMessages }: { initialMessages: ChatMessage[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const awaitingReply = messages.at(-1)?.role === "user";
+  // Also true before the interviewer's first message arrives (e.g. if the opening failed).
+  const awaitingReply = messages.length === 0 || messages.at(-1)?.role === "user";
 
   return (
     <BurstChat
       messages={messages}
       pending={pending}
-      error={error ?? (awaitingReply && !pending ? "The interviewer hasn't replied to your last message yet." : null)}
+      error={
+        error ??
+        (awaitingReply && !pending && messages.length > 0
+          ? "The interviewer hasn't replied to your last message yet."
+          : null)
+      }
       onFinish={send}
       onRetry={awaitingReply ? () => send() : undefined}
       placeholder="Type your answer…"

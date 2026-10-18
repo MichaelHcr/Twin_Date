@@ -1,8 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { runInterviewerTurn } from "@/lib/agents/interviewer";
 import { createClient } from "@/lib/supabase/server";
+import { describeAgentError } from "@/lib/agents/errors";
 
 // An interview turn can take several model calls (tool use), so allow up to a minute.
 export const maxDuration = 60;
@@ -68,10 +68,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ reply, done });
   } catch (error) {
     console.error("Interviewer turn failed:", error);
-    const status = error instanceof Anthropic.RateLimitError ? 429 : 502;
-    return NextResponse.json(
-      { error: "The interviewer couldn't reply just now. Please press Retry." },
-      { status },
-    );
+    const { status, message } = describeAgentError(error, "The interviewer");
+    return NextResponse.json({ error: message }, { status });
   }
 }
