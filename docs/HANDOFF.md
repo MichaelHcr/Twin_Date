@@ -43,8 +43,11 @@ fresh branch from `main`.
 Twin conversations, ledgers, reports and seed users are written by the server, not by a
 signed-in user, and the RLS policies deliberately don't allow browser writes there.
 - In Supabase → Project Settings → API Keys, copy the **secret** key. Add it as
-  `SUPABASE_SECRET_KEY` to `.env.local` and to Vercel (Production + Preview, Sensitive), then
-  redeploy. Add the name (no value) to `.env.example`.
+  `SUPABASE_SECRET_KEY` to `.env.local` and add the name (no value) to `.env.example`.
+- **Tonight, only the project owner can change Vercel settings.** Work and test locally; the
+  owner will add `SUPABASE_SECRET_KEY` to Vercel (Production + Preview, Sensitive) and
+  redeploy on Mon Oct 19. Until then, features that need it will fail on Vercel previews.
+  That's expected, so don't debug it.
 - Add `src/lib/supabase/admin.ts`: a `createClient` from `@supabase/supabase-js` with that
   key and `auth: { persistSession: false }`. Import it **only** from server code
   (route handlers, scripts), never from a `"use client"` file.
