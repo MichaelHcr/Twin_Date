@@ -38,6 +38,16 @@ type ReportRow = {
 const ALIGNABLE = ["kids", "smoking", "relocation"];
 const SHORT_GOALS: Record<string, string> = { long_term: "long-term", short_term: "short-term", open: "open to either" };
 
+// Without the card agent's headline: the report's first sentence, cut before a
+// colon and to about 16 words, so the card still reads at a glance.
+function shortLine(summary: string) {
+  const sentence = summary.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() ?? summary;
+  const clause = sentence.split(":")[0].trim();
+  const words = clause.split(/\s+/);
+  const short = words.length > 16 ? `${words.slice(0, 16).join(" ")}…` : clause;
+  return /[.!?…]$/.test(short) ? short : `${short}.`;
+}
+
 // Everything the cards need, keyed by conversation id. Only conversations with
 // a report get a card. Names and photos are never read here: they stay hidden
 // until both say yes.
@@ -82,7 +92,7 @@ export async function loadMatchCards(supabase: SupabaseClient, userId: string, i
       : fallback
         ? { text: fallback.quote, topic: null, highlight: null }
         : null;
-    const firstSentence = report.summary.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() ?? report.summary;
+    const firstSentence = shortLine(report.summary);
     const tags: Tag[] = card
       ? card.tags
       : [
@@ -154,7 +164,13 @@ export function MatchCardView({ data, children }: { data: CardData; children?: R
 
       <div className="px-5 pb-1 pt-4">
         <p className="text-xs font-medium text-violet-700 dark:text-violet-300">Your twins found</p>
-        <p className="mt-1 font-serif text-2xl leading-snug text-black dark:text-zinc-50">{data.headline}</p>
+        <p
+          className={`mt-1 line-clamp-3 font-serif leading-snug text-black dark:text-zinc-50 ${
+            data.headline.length > 90 ? "text-xl" : "text-2xl"
+          }`}
+        >
+          {data.headline}
+        </p>
       </div>
 
       {data.quote && (
