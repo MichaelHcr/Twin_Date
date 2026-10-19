@@ -34,3 +34,15 @@ export async function sendChatMessage(conversationId: string, content: string) {
   revalidatePath("/", "layout");
   return null;
 }
+
+// Marks the chat read up to now (migration 0008) and refreshes the pages, so
+// unread badges clear. Returns false if it couldn't, for example before the
+// migration is applied; the caller then refreshes on its own.
+export async function markChatRead(conversationId: string) {
+  if (!z.uuid().safeParse(conversationId).success) return false;
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("mark_chat_read", { conv: conversationId });
+  if (error) return false;
+  revalidatePath("/", "layout");
+  return true;
+}
