@@ -1,16 +1,16 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { HomeDashboard } from "./home-dashboard";
 
 export default function Home() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-6 bg-zinc-50 px-6 py-24 text-center font-sans dark:bg-black">
-      <h1 className="text-4xl font-semibold tracking-tight text-black dark:text-zinc-50">
-        Twin Date
+    <main className="flex flex-1 flex-col items-center gap-6 bg-zinc-50 px-4 py-16 text-center font-sans sm:py-20 dark:bg-black">
+      <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-black sm:text-5xl dark:text-zinc-50">
+        Your AI twin goes on the first chat for you.
       </h1>
       <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-        Your AI twin goes on the first chat for you, then hands you a shortlist
-        of people worth meeting.
+        Then it hands you a shortlist of people worth meeting.
       </p>
       {/* The page shell is static; only the login status is per-visitor. */}
       <Suspense fallback={<div className="h-9" />}>
@@ -43,35 +43,23 @@ async function AuthStatus() {
     .eq("user_id", user.id)
     .single();
 
+  // Once onboarding is done, home is Matches and Connections. Profile, twin and
+  // sign-out live in the account menu at the top right.
+  if (profile?.onboarding_complete) return <HomeDashboard supabase={supabase} userId={user.id} />;
+
+  // Still setting up: the next step of onboarding.
   const next = !profile?.display_name
     ? { href: "/onboarding/profile", label: "Build your profile" }
-    : !profile.onboarding_complete
-      ? { href: "/onboarding/interview", label: "Continue your interview" }
-      : { href: "/twin", label: "Meet your twin" };
+    : { href: "/onboarding/interview", label: "Continue your interview" };
 
   return (
     <div className="flex flex-col items-center gap-3">
-      {profile?.onboarding_complete && (
-        <p className="rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700 dark:bg-green-950 dark:text-green-400">
-          ✓ Interview complete
-        </p>
-      )}
       <Link
         href={next.href}
         className="rounded-full bg-black px-5 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
       >
         {next.label}
       </Link>
-      {profile?.onboarding_complete && (
-        <Link href="/matches" className="text-sm font-medium text-black underline dark:text-zinc-50">
-          Your matches
-        </Link>
-      )}
-      {profile?.onboarding_complete && (
-        <Link href="/onboarding/profile" className="text-sm text-zinc-600 underline dark:text-zinc-400">
-          Edit profile
-        </Link>
-      )}
       <p className="text-sm text-zinc-500">Signed in as {user.email}</p>
       <form action="/auth/signout" method="post">
         <button className="rounded-full border border-zinc-300 px-4 py-1 text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">

@@ -1,19 +1,18 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { END_REASON_LABELS, scoreColor } from "@/lib/matches";
+import { DecisionBar, DecisionStatus } from "./decision-panel";
 import { LiveRunner } from "./live-runner";
+import { BackLink } from "@/components/back-link";
 
 // One match: the Judge's report and the anonymized transcript.
 export default function MatchPage({ params }: PageProps<"/matches/[id]">) {
   return (
     <main className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 font-sans dark:bg-black">
       <div className="flex w-full max-w-xl flex-col">
-        <Link href="/matches" className="text-sm text-zinc-500 hover:underline">
-          ← Your matches
-        </Link>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
+        <BackLink href="/matches">Your matches</BackLink>
+        <h1 className="mt-5 text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
           Match report
         </h1>
         <Suspense fallback={<p className="mt-8 text-zinc-500">Loading…</p>}>
@@ -61,6 +60,7 @@ async function MatchLoader({ params }: { params: Promise<{ id: string }> }) {
   return (
     <div className="mt-6 flex flex-col gap-6">
       {unfinished && <LiveRunner conversationId={conversation.id} />}
+      {report && <DecisionStatus supabase={supabase} conversation={conversation} userId={user.id} />}
       {report ? (
         <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
           <div className="flex items-center gap-4">
@@ -134,6 +134,8 @@ async function MatchLoader({ params }: { params: Promise<{ id: string }> }) {
           Right: your twin. Left: their twin. Names stay hidden until you both say yes.
         </p>
       </section>
+
+      {report && <DecisionBar supabase={supabase} conversation={conversation} userId={user.id} />}
     </div>
   );
 }
