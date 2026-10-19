@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { describeAgentError } from "@/lib/agents/errors";
+import { conversationsThisWeek, loadSubscription, PLANS } from "@/lib/billing";
 import { createConversation } from "@/lib/agents/orchestrator";
 import { scoutMatches } from "@/lib/agents/scout";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -34,6 +35,19 @@ export async function POST() {
     .limit(1)
     .maybeSingle();
   if (open) return NextResponse.json({ conversationId: open.id });
+
+  // The plan's weekly quota (PRD: Auth, payments and publishing).
+  const { tier } = await loadSubscription(supabase, user.id);
+  const used = await conversationsThisWeek(supabase, user.id);
+  if (used >= PLANS[tier].perWeek) {
+    return NextResponse.json(
+      {
+        error: `You've used all ${PLANS[tier].perWeek} first chats on the ${PLANS[tier].name} plan this week.`,
+        upgrade: tier !== "pro",
+      },
+      { status: 402 },
+    );
+  }
 
   try {
     const admin = createAdminClient();

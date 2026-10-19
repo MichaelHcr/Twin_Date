@@ -72,6 +72,9 @@ async function AuthStatus() {
           Edit profile
         </Link>
       )}
+      <Link href="/pricing" className="text-sm text-zinc-600 underline dark:text-zinc-400">
+        Plans
+      </Link>
       <p className="text-sm text-zinc-500">Signed in as {user.email}</p>
       <form action="/auth/signout" method="post">
         <button className="rounded-full border border-zinc-300 px-4 py-1 text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
