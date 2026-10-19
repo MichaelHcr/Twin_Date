@@ -42,3 +42,6 @@ next-env.d.ts
 
 # key template is safe to commit
 !.env.example
+
+# generated seed personas (regenerate with npm run seed -- --dry-run)
+/scripts/output/
