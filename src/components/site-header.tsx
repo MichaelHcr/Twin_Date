@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AccountMenu } from "@/components/account-menu";
 import { NavLink } from "@/components/nav-link";
-import { decisionState, wantsToMeet, type DecisionRow } from "@/lib/decisions";
+import { loadDecisionStates, NO_DECISION, wantsToMeet, type DecisionState } from "@/lib/decisions";
 import { single } from "@/lib/matches";
 import { signPhotoUrls } from "@/lib/photos";
 import { createClient } from "@/lib/supabase/server";
@@ -22,8 +22,8 @@ export function HeaderShell({ children }: { children?: React.ReactNode }) {
 }
 
 type Row = {
+  id: string;
   reports: { score: number } | { score: number }[] | null;
-  decisions: DecisionRow[] | null;
 };
 
 export async function SiteHeader() {
@@ -45,10 +45,12 @@ export async function SiteHeader() {
     );
   }
 
-  const [{ data: profile }, { data: conversations }] = await Promise.all([
+  const [{ data: profile }, { data: conversations }, states] = await Promise.all([
     supabase.from("profiles").select("display_name, photos, onboarding_complete").eq("user_id", user.id).single(),
     // Row-level security only returns conversations this user is part of.
-    supabase.from("conversations").select("reports(score), decisions(user_id, decision)").eq("status", "ended"),
+    supabase.from("conversations").select("id, reports(score)").eq("status", "ended"),
+    // Badges are extras: if decisions can't load, show none rather than break every page.
+    loadDecisionStates(supabase).catch(() => new Map<string, DecisionState>()),
   ]);
 
   // Badges: matches waiting for a yes or pass, requests waiting for an answer,
@@ -58,7 +60,7 @@ export async function SiteHeader() {
   let connected = 0;
   for (const c of (conversations ?? []) as Row[]) {
     if (!single(c.reports)) continue;
-    const state = decisionState(c.decisions ?? [], user.id);
+    const state = states.get(c.id) ?? NO_DECISION;
     if (state.connected) connected++;
     else if (state.theyRequested && !wantsToMeet(state.mine)) requests++;
     else if (state.mine === null) yourCall++;

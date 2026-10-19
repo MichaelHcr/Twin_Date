@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar";
 import { requireUser } from "@/lib/auth";
-import { decisionState, loadRevealedProfiles, type DecisionRow } from "@/lib/decisions";
+import { loadDecisionStates, loadRevealedProfiles } from "@/lib/decisions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ChatComposer } from "./composer";
 import { ChatLiveUpdates } from "./live-updates";
@@ -35,11 +35,7 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
     .maybeSingle();
   if (!conversation) notFound();
 
-  const { data: decisions } = await supabase
-    .from("decisions")
-    .select("user_id, decision")
-    .eq("conversation_id", id);
-  if (!decisionState((decisions ?? []) as DecisionRow[], user.id).connected) {
+  if (!(await loadDecisionStates(supabase, id)).get(id)?.connected) {
     return (
       <p className="mt-8 rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
         Chat opens once you both say yes.{" "}

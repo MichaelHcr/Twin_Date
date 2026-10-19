@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { MAX_PHOTOS, PHOTO_BUCKET } from "@/lib/photos";
+import { isOwnPhotoPath, MAX_PHOTOS, PHOTO_BUCKET } from "@/lib/photos";
 
 type Result = { error: string } | null;
 
@@ -23,14 +23,14 @@ async function savePhotos(photos: string[]): Promise<Result> {
 // Records a photo the browser just uploaded to the user's own folder.
 export async function addPhoto(path: string): Promise<Result> {
   const { supabase, user, photos } = await loadPhotos();
-  const match = new RegExp(`^${user.id}/([0-9a-f-]{36}\\.(?:jpg|png|webp))$`).exec(path);
-  if (!match) return { error: "That upload isn't in your photo folder." };
+  if (!isOwnPhotoPath(user.id, path)) return { error: "That upload isn't in your photo folder." };
+  const fileName = path.slice(user.id.length + 1);
   if (photos.includes(path)) return null;
   if (photos.length >= MAX_PHOTOS) return { error: `You can have up to ${MAX_PHOTOS} photos.` };
 
   // Make sure the file really was uploaded before pointing the profile at it.
-  const { data: files } = await supabase.storage.from(PHOTO_BUCKET).list(user.id, { search: match[1] });
-  if (!files?.some((f) => f.name === match[1])) return { error: "The upload didn't finish. Try again." };
+  const { data: files } = await supabase.storage.from(PHOTO_BUCKET).list(user.id, { search: fileName });
+  if (!files?.some((f) => f.name === fileName)) return { error: "The upload didn't finish. Try again." };
 
   return savePhotos([...photos, path]);
 }

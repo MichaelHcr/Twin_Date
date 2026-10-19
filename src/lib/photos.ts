@@ -13,6 +13,12 @@ export const PHOTO_TYPES: Record<string, string> = {
   "image/webp": "webp",
 };
 
+// True for <userId>/<uuid>.<jpg|png|webp>, the only shape the app uploads. The
+// database enforces the same rule on profiles.photos (migration 0007).
+export function isOwnPhotoPath(userId: string, path: string) {
+  return new RegExp(`^${userId}/[0-9a-f-]{36}\\.(?:jpg|png|webp)$`).test(path);
+}
+
 // Signed URLs for display, one per path in the same order (null if a file is
 // missing). They expire after an hour; pages are rendered per request, so each
 // visit gets fresh ones. Use the user's own client for their own photos, and the

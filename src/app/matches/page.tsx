@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { decisionState, wantsToMeet, type DecisionRow, type DecisionState } from "@/lib/decisions";
+import { loadDecisionStates, NO_DECISION, wantsToMeet, type DecisionState } from "@/lib/decisions";
 import { END_REASON_LABELS, scoreColor, single } from "@/lib/matches";
 import { FindMatchButton } from "./find-button";
 import { BackLink } from "@/components/back-link";
@@ -42,7 +42,6 @@ type Row = {
   turn_count: number;
   created_at: string;
   reports: { score: number; summary: string } | { score: number; summary: string }[] | null;
-  decisions: DecisionRow[] | null;
 };
 
 // Where the Yes / Pass choice stands for one match, as a small label.
@@ -60,18 +59,21 @@ function decisionBadge(state: DecisionState, hasReport: boolean) {
 }
 
 async function MatchesLoader() {
-  const { supabase, user } = await requireUser();
+  const { supabase } = await requireUser();
   // Row-level security only returns conversations this user is part of.
-  const { data, error } = await supabase
-    .from("conversations")
-    .select("id, status, end_reason, turn_count, created_at, reports(score, summary), decisions(user_id, decision)")
-    .order("created_at", { ascending: false });
+  const [{ data, error }, states] = await Promise.all([
+    supabase
+      .from("conversations")
+      .select("id, status, end_reason, turn_count, created_at, reports(score, summary)")
+      .order("created_at", { ascending: false }),
+    loadDecisionStates(supabase),
+  ]);
   if (error) return <p className="mt-8 text-red-600">{error.message}</p>;
 
   const rows = ((data ?? []) as Row[])
     .map((c) => {
       const report = single(c.reports);
-      return { ...c, report, badge: decisionBadge(decisionState(c.decisions ?? [], user.id), Boolean(report)) };
+      return { ...c, report, badge: decisionBadge(states.get(c.id) ?? NO_DECISION, Boolean(report)) };
     })
     .sort((x, y) => (y.report?.score ?? -1) - (x.report?.score ?? -1));
 

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { requireUser } from "@/lib/auth";
-import { decisionState, loadRevealedProfiles, wantsToMeet, type DecisionRow } from "@/lib/decisions";
+import { loadDecisionStates, loadRevealedProfiles, NO_DECISION, wantsToMeet } from "@/lib/decisions";
 import { scoreColor, single } from "@/lib/matches";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BackLink } from "@/components/back-link";
@@ -33,23 +33,25 @@ type Row = {
   user_a: string;
   user_b: string;
   reports: { score: number } | { score: number }[] | null;
-  decisions: DecisionRow[] | null;
 };
 
 async function ConnectionsLoader() {
   const { supabase, user } = await requireUser();
   // Row-level security only returns conversations this user is part of.
-  const { data, error } = await supabase
-    .from("conversations")
-    .select("id, user_a, user_b, reports(score), decisions(user_id, decision)")
-    .eq("status", "ended")
-    .order("created_at", { ascending: false });
+  const [{ data, error }, states] = await Promise.all([
+    supabase
+      .from("conversations")
+      .select("id, user_a, user_b, reports(score)")
+      .eq("status", "ended")
+      .order("created_at", { ascending: false }),
+    loadDecisionStates(supabase),
+  ]);
   if (error) return <p className="mt-8 text-red-600">{error.message}</p>;
 
   const connected: { id: string; otherId: string }[] = [];
   const requests: { id: string; score: number | null }[] = [];
   for (const c of (data ?? []) as Row[]) {
-    const state = decisionState(c.decisions ?? [], user.id);
+    const state = states.get(c.id) ?? NO_DECISION;
     if (state.connected) {
       connected.push({ id: c.id, otherId: c.user_a === user.id ? c.user_b : c.user_a });
     } else if (state.theyRequested && !wantsToMeet(state.mine)) {
