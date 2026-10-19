@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { END_REASON_LABELS, scoreColor } from "@/lib/matches";
+import { DecisionPanel } from "./decision-panel";
 import { LiveRunner } from "./live-runner";
 
 // One match: the Judge's report and the anonymized transcript.
@@ -113,6 +114,8 @@ async function MatchLoader({ params }: { params: Promise<{ id: string }> }) {
           </p>
         )
       )}
+
+      {report && <DecisionPanel supabase={supabase} conversation={conversation} userId={user.id} />}
 
       <section>
         <h2 className="font-semibold text-black dark:text-zinc-50">The chat</h2>

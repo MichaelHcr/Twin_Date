@@ -18,6 +18,9 @@ export default function MatchesPage() {
         <p className="mt-1 text-zinc-600 dark:text-zinc-400">
           First chats your twin had, ranked by how promising they look.
         </p>
+        <Link href="/connections" className="mt-2 self-start text-sm font-medium text-zinc-700 hover:underline dark:text-zinc-300">
+          Your connections →
+        </Link>
         <FindMatchButton />
         <Suspense fallback={<p className="mt-8 text-zinc-500">Loading…</p>}>
           <MatchesLoader />
