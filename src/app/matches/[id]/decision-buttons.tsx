@@ -11,9 +11,11 @@ export type DecisionOption = { decision: Decision; label: string; primary?: bool
 export function DecisionButtons({
   conversationId,
   options,
+  className = "mt-4",
 }: {
   conversationId: string;
   options: DecisionOption[];
+  className?: string;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export function DecisionButtons({
   }
 
   return (
-    <div className="mt-4">
+    <div className={className}>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
           <button

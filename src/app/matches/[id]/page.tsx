@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { END_REASON_LABELS, scoreColor } from "@/lib/matches";
-import { DecisionPanel } from "./decision-panel";
+import { DecisionBar, DecisionStatus } from "./decision-panel";
 import { LiveRunner } from "./live-runner";
 
 // One match: the Judge's report and the anonymized transcript.
@@ -62,6 +62,7 @@ async function MatchLoader({ params }: { params: Promise<{ id: string }> }) {
   return (
     <div className="mt-6 flex flex-col gap-6">
       {unfinished && <LiveRunner conversationId={conversation.id} />}
+      {report && <DecisionStatus supabase={supabase} conversation={conversation} userId={user.id} />}
       {report ? (
         <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
           <div className="flex items-center gap-4">
@@ -115,8 +116,6 @@ async function MatchLoader({ params }: { params: Promise<{ id: string }> }) {
         )
       )}
 
-      {report && <DecisionPanel supabase={supabase} conversation={conversation} userId={user.id} />}
-
       <section>
         <h2 className="font-semibold text-black dark:text-zinc-50">The chat</h2>
         <div className="mt-3 flex flex-col gap-2">
@@ -137,6 +136,8 @@ async function MatchLoader({ params }: { params: Promise<{ id: string }> }) {
           Right: your twin. Left: their twin. Names stay hidden until you both say yes.
         </p>
       </section>
+
+      {report && <DecisionBar supabase={supabase} conversation={conversation} userId={user.id} />}
     </div>
   );
 }
