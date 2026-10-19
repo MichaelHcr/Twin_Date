@@ -67,6 +67,9 @@ export function AccountMenu({ name, email, photoUrl }: { name: string; email: st
           <Link href="/connections" onClick={() => setOpen(false)} className={item}>
             Connections
           </Link>
+          <Link href="/pricing" onClick={() => setOpen(false)} className={item}>
+            Plans and billing
+          </Link>
           <div className="my-1 border-t border-zinc-200 dark:border-zinc-800" />
           <form action="/auth/signout" method="post">
             <button className={`${item} w-full text-left`}>Sign out</button>

@@ -21,7 +21,7 @@ Tue Oct 20 night.**
 | Twin-to-twin Orchestrator v1 (step 3) | Done, on branch, tested against mocks only | `src/lib/agents/orchestrator.ts`, `scripts/converse.ts` |
 | Judge agent + `/matches` shortlist + `/matches/[id]` report (step 4) | Done, on branch | `src/lib/agents/judge.ts`, `scripts/judge.ts`, `src/app/matches` |
 | Scout + "Find my next match" + live chat page | Done, on branch; needs `SUPABASE_SECRET_KEY` on Vercel | `src/lib/agents/scout.ts`, `src/app/api/matches/find`, `src/app/api/conversations/[id]/step` |
-| Stripe | Not started | See next steps |
+| Stripe (test mode): `/pricing`, Checkout, webhook, weekly quota | Done, on branch `feature/stripe-payments`; needs migration `0009` and Stripe keys | `src/lib/billing.ts`, `src/app/api/stripe`, `src/app/pricing` |
 
 **Branch to continue from:** `feature/profile-onboarding`. It is pushed but **not merged into
 `main` yet**: the live site still shows only sign-in.
@@ -132,6 +132,21 @@ ranked by score.
 - `ask_my_human` notifications and the jump-in feature.
 - Twin fidelity rating (1-5 + correction) on `/twin`, which is a PRD P0.
 - Privacy screens, delete-my-data, evaluation runs, demo script.
+
+## Stripe setup (test mode, one time)
+Code: `src/lib/billing.ts` (plans and quotas), `src/app/api/stripe/{checkout,portal,webhook}`,
+`src/app/pricing`. Prices are created inline at checkout, so no products are needed in Stripe.
+Quota = conversations the user started in the last 7 days (Free 3, Plus 15, Pro 40).
+1. Run `supabase/migrations/0009_stripe.sql` in the Supabase SQL Editor.
+2. Stripe dashboard, **Test mode on** → Developers → API keys: copy the secret key (`sk_test_...`)
+   into `.env.local` and Vercel as `STRIPE_SECRET_KEY`.
+3. Developers → Webhooks → Add endpoint `https://twin-date.vercel.app/api/stripe/webhook`, events
+   `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`,
+   `customer.subscription.deleted`. Copy its signing secret (`whsec_...`) to Vercel as
+   `STRIPE_WEBHOOK_SECRET`, then redeploy. Locally: `stripe listen --forward-to localhost:3000/api/stripe/webhook`
+   prints a `whsec_` for `.env.local` (the success page also applies the plan without the webhook).
+4. Settings → Billing → Customer portal: save the test-mode settings once so "Manage billing" works.
+5. Test card `4242 4242 4242 4242`, any future date, any CVC.
 
 ## Known issues and decisions
 - **Email sign-in limit**: Supabase's built-in email sends only a few emails per hour, project

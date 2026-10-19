@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { refreshPages } from "@/app/actions";
 
@@ -9,14 +10,19 @@ export function FindMatchButton() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [upgrade, setUpgrade] = useState(false);
 
   async function find() {
     setPending(true);
     setError(null);
+    setUpgrade(false);
     try {
       const res = await fetch("/api/matches/find", { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      if (!res.ok) {
+        setUpgrade(Boolean(data.upgrade));
+        throw new Error(data.error ?? "Something went wrong.");
+      }
       await refreshPages();
       router.push(`/matches/${data.conversationId}`);
     } catch (e) {
@@ -34,7 +40,16 @@ export function FindMatchButton() {
       >
         {pending ? "Finding someone…" : "Find my next match"}
       </button>
-      {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && (
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+          {error}{" "}
+          {upgrade && (
+            <Link href="/pricing" className="font-medium underline">
+              Upgrade for more
+            </Link>
+          )}
+        </p>
+      )}
     </div>
   );
 }
