@@ -7,6 +7,7 @@ import { loadDecisionStates, loadRevealedProfiles } from "@/lib/decisions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ChatComposer } from "./composer";
 import { ChatLiveUpdates } from "./live-updates";
+import { ChatMessages } from "./messages";
 import { BackLink } from "@/components/back-link";
 
 // Person-to-person chat with a connected match (both said yes).
@@ -51,7 +52,7 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
     loadRevealedProfiles(createAdminClient(), [otherId]),
     supabase
       .from("chat_messages")
-      .select("id, sender_id, content")
+      .select("id, sender_id, content, created_at")
       .eq("conversation_id", id)
       .order("created_at")
       .order("id"),
@@ -88,18 +89,14 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
               You&apos;re connected. Say hi, or start with one of the report&apos;s questions to ask.
             </p>
           )}
-          {(messages ?? []).map((m) => (
-            <div
-              key={m.id}
-              className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${
-                m.sender_id === user.id
-                  ? "self-end bg-black text-white dark:bg-white dark:text-black"
-                  : "self-start bg-zinc-100 text-black dark:bg-zinc-900 dark:text-zinc-50"
-              }`}
-            >
-              {m.content}
-            </div>
-          ))}
+          <ChatMessages
+            messages={(messages ?? []).map((m) => ({
+              id: m.id,
+              mine: m.sender_id === user.id,
+              content: m.content,
+              createdAt: m.created_at,
+            }))}
+          />
         </div>
       </div>
 

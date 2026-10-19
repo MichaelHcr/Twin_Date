@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AccountMenu } from "@/components/account-menu";
+import { ChatNotifier } from "@/components/chat-notifier";
 import { NavLink } from "@/components/nav-link";
+import { loadChatSummaries } from "@/lib/chat";
 import { loadDecisionStates, NO_DECISION, wantsToMeet, type DecisionState } from "@/lib/decisions";
 import { single } from "@/lib/matches";
 import { signPhotoUrls } from "@/lib/photos";
@@ -45,16 +47,18 @@ export async function SiteHeader() {
     );
   }
 
-  const [{ data: profile }, { data: conversations }, states] = await Promise.all([
+  const [{ data: profile }, { data: conversations }, states, chats] = await Promise.all([
     supabase.from("profiles").select("display_name, photos, onboarding_complete").eq("user_id", user.id).single(),
     // Row-level security only returns conversations this user is part of.
     supabase.from("conversations").select("id, reports(score)").eq("status", "ended"),
     // Badges are extras: if decisions can't load, show none rather than break every page.
     loadDecisionStates(supabase).catch(() => new Map<string, DecisionState>()),
+    loadChatSummaries(supabase),
   ]);
+  const unreadChats = [...chats.values()].filter((c) => c.unread > 0).length;
 
-  // Badges: matches waiting for a yes or pass, requests waiting for an answer,
-  // and people already connected.
+  // Badges: matches waiting for a yes or pass; on Connections, requests waiting
+  // for an answer plus chats with unread messages, or else how many are connected.
   let yourCall = 0;
   let requests = 0;
   let connected = 0;
@@ -76,12 +80,17 @@ export async function SiteHeader() {
           <NavLink href="/matches" count={yourCall} urgent>
             Matches
           </NavLink>
-          <NavLink href="/connections" count={requests || connected} urgent={requests > 0}>
+          <NavLink
+            href="/connections"
+            count={requests + unreadChats || connected}
+            urgent={requests + unreadChats > 0}
+          >
             Connections
           </NavLink>
         </nav>
       )}
       <AccountMenu name={name} email={user.email ?? ""} photoUrl={photoUrl} />
+      <ChatNotifier userId={user.id} />
     </HeaderShell>
   );
 }
