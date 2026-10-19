@@ -9,7 +9,8 @@
     "lint": "eslint",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
     "converse": "tsx --env-file=.env.local scripts/converse.ts",
-    "judge": "tsx --env-file=.env.local scripts/judge.ts"
+    "judge": "tsx --env-file=.env.local scripts/judge.ts",
+    "check-matches": "tsx --env-file=.env.local scripts/check-matches.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

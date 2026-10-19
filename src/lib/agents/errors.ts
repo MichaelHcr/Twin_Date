@@ -3,6 +3,12 @@ import Anthropic from "@anthropic-ai/sdk";
 // Turns an agent failure into an HTTP status and a message that says what kind
 // of problem it was, so setup mistakes (like a missing API key) are easy to spot.
 export function describeAgentError(error: unknown, who: string) {
+  if (error instanceof Error && /SUPABASE_SECRET_KEY/.test(error.message)) {
+    return {
+      status: 500,
+      message: `${who} isn't set up correctly: the server's SUPABASE_SECRET_KEY is missing.`,
+    };
+  }
   const missingKey =
     error instanceof Error && /could not resolve authentication method/i.test(error.message);
   if (
