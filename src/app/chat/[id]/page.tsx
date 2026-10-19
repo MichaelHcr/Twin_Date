@@ -7,15 +7,14 @@ import { decisionState, loadRevealedProfiles, type DecisionRow } from "@/lib/dec
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ChatComposer } from "./composer";
 import { ChatLiveUpdates } from "./live-updates";
+import { BackLink } from "@/components/back-link";
 
 // Person-to-person chat with a connected match (both said yes).
 export default function ChatPage({ params }: PageProps<"/chat/[id]">) {
   return (
     <main className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 font-sans dark:bg-black">
       <div className="flex w-full max-w-xl flex-col">
-        <Link href="/connections" className="text-sm text-zinc-500 hover:underline">
-          ← Your connections
-        </Link>
+        <BackLink href="/connections">Your connections</BackLink>
         <Suspense fallback={<p className="mt-8 text-zinc-500">Loading…</p>}>
           <ChatLoader params={params} />
         </Suspense>
@@ -74,7 +73,7 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
       <p className="mt-1 text-sm text-zinc-500">
         {[other?.age != null ? `${other.age}` : null, other?.city].filter(Boolean).join(" · ")}
         {" · "}
-        <Link href={`/matches/${id}`} className="hover:underline">
+        <Link href={`/matches/${id}`} className="font-semibold text-black underline dark:text-zinc-50">
           See the twins&apos; report
         </Link>
       </p>

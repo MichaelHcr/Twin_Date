@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { decisionState, loadRevealedProfiles, wantsToMeet, type DecisionRow } from "@/lib/decisions";
 import { scoreColor, single } from "@/lib/matches";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { BackLink } from "@/components/back-link";
 
 // People the user is connected with (both said yes), and connection requests
 // waiting for their answer.
@@ -12,10 +13,8 @@ export default function ConnectionsPage() {
   return (
     <main className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 font-sans dark:bg-black">
       <div className="flex w-full max-w-xl flex-col">
-        <Link href="/matches" className="text-sm text-zinc-500 hover:underline">
-          ← Your matches
-        </Link>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
+        <BackLink href="/matches">Your matches</BackLink>
+        <h1 className="mt-5 text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
           Connections
         </h1>
         <p className="mt-1 text-zinc-600 dark:text-zinc-400">

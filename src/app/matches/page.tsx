@@ -4,16 +4,15 @@ import { requireUser } from "@/lib/auth";
 import { decisionState, wantsToMeet, type DecisionRow, type DecisionState } from "@/lib/decisions";
 import { END_REASON_LABELS, scoreColor, single } from "@/lib/matches";
 import { FindMatchButton } from "./find-button";
+import { BackLink } from "@/components/back-link";
 
 // The shortlist: every twin conversation the user is part of, best score first.
 export default function MatchesPage() {
   return (
     <main className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 font-sans dark:bg-black">
       <div className="flex w-full max-w-xl flex-col">
-        <Link href="/" className="text-sm text-zinc-500 hover:underline">
-          ← Home
-        </Link>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
+        <BackLink href="/">Home</BackLink>
+        <h1 className="mt-5 text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
           Your matches
         </h1>
         <p className="mt-1 text-zinc-600 dark:text-zinc-400">

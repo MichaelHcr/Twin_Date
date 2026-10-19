@@ -1,20 +1,18 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { END_REASON_LABELS, scoreColor } from "@/lib/matches";
 import { DecisionBar, DecisionStatus } from "./decision-panel";
 import { LiveRunner } from "./live-runner";
+import { BackLink } from "@/components/back-link";
 
 // One match: the Judge's report and the anonymized transcript.
 export default function MatchPage({ params }: PageProps<"/matches/[id]">) {
   return (
     <main className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 font-sans dark:bg-black">
       <div className="flex w-full max-w-xl flex-col">
-        <Link href="/matches" className="text-sm text-zinc-500 hover:underline">
-          ← Your matches
-        </Link>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
+        <BackLink href="/matches">Your matches</BackLink>
+        <h1 className="mt-5 text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
           Match report
         </h1>
         <Suspense fallback={<p className="mt-8 text-zinc-500">Loading…</p>}>
