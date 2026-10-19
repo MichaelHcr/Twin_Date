@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { END_REASON_LABELS, scoreColor, single } from "@/lib/matches";
+import { FindMatchButton } from "./find-button";
 
 // The shortlist: every twin conversation the user is part of, best score first.
 export default function MatchesPage() {
@@ -17,6 +18,7 @@ export default function MatchesPage() {
         <p className="mt-1 text-zinc-600 dark:text-zinc-400">
           First chats your twin had, ranked by how promising they look.
         </p>
+        <FindMatchButton />
         <Suspense fallback={<p className="mt-8 text-zinc-500">Loading…</p>}>
           <MatchesLoader />
         </Suspense>
@@ -50,7 +52,7 @@ async function MatchesLoader() {
   if (rows.length === 0) {
     return (
       <div className="mt-8 rounded-2xl border border-zinc-200 bg-white p-6 text-center text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
-        No chats yet. Your twin will start meeting people soon.
+        No chats yet. Press “Find my next match” to send your twin on a first chat.
       </div>
     );
   }
@@ -78,7 +80,7 @@ async function MatchesLoader() {
               <p className="font-medium text-black dark:text-zinc-50">Match #{i + 1}</p>
               <p className="line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
                 {c.report?.summary ??
-                  (c.status === "ended" ? "Report coming soon." : "Your twin is chatting now.")}
+                  (c.status === "ended" ? "Open to see the report." : "Open to watch your twin chat.")}
               </p>
               <p className="mt-1 text-xs text-zinc-500">
                 {c.end_reason ? END_REASON_LABELS[c.end_reason] : "In progress"} · {c.turn_count} turns

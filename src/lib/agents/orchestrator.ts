@@ -23,7 +23,7 @@ const LOCKED_TOPICS = TOPICS.filter((t) => t.tier === "locked").map((t) => t.key
 ];
 const ALIASES = { a: "Member A", b: "Member B" } as const;
 
-type Side = "a" | "b";
+export type Side = "a" | "b";
 export type EndReason = "turn_cap" | "red_flag" | "guardrail" | "all_topics_covered" | "not_a_fit";
 export type Ledger = {
   pros: string[];
@@ -90,6 +90,10 @@ function historyFor(
         ? { role: "assistant", content: JSON.stringify({ messages: t.messages }) }
         : { role: "user", content: t.messages.join("\n") },
     );
+  }
+  // The chat must end on the other side's message. If a turn was lost, nudge instead.
+  if (messages.length === 0 || messages.at(-1)!.role === "assistant") {
+    messages.push({ role: "user", content: "[Twin Date: it's your turn to reply.]" });
   }
   // Attach the status line to the last user message.
   const last = messages.at(-1)!;
@@ -224,9 +228,135 @@ async function loadLockedAnswers(admin: SupabaseClient, userId: string) {
   return new Map((data ?? []).map((a) => [a.topic as string, a.answer as string]));
 }
 
-// Runs a whole conversation between two users' twins in one go and stores it.
-// 20 turns take a few minutes, so call it from a script or a background job,
-// not from a normal request.
+// Conversations run one turn per call, so each call fits in a normal request:
+// a web page can drive it turn by turn, and a script can loop. All state lives in
+// the database (messages, ledgers, turn_count), so any call can pick up the next turn.
+
+export async function createConversation(admin: SupabaseClient, userA: string, userB: string) {
+  if (userA === userB) throw new Error("A conversation needs two different users.");
+  const { data, error } = await admin
+    .from("conversations")
+    .insert({ user_a: userA, user_b: userB, status: "queued" })
+    .select("id")
+    .single();
+  if (error || !data) throw new Error(`Couldn't create conversation: ${error?.message}`);
+  return data.id as string;
+}
+
+async function loadTranscript(admin: SupabaseClient, conversationId: string) {
+  const { data } = await admin
+    .from("messages")
+    .select("speaker, content, turn")
+    .eq("conversation_id", conversationId)
+    .order("turn")
+    .order("id");
+  const turns: TranscriptTurn[] = [];
+  for (const m of data ?? []) {
+    const last = turns.at(-1);
+    if (last && last.turn === m.turn) last.messages.push(m.content);
+    else turns.push({ speaker: m.speaker as Side, turn: m.turn, messages: [m.content] });
+  }
+  return turns;
+}
+
+export async function loadLedger(admin: SupabaseClient, conversationId: string, side: Side) {
+  const { data } = await admin
+    .from("ledgers")
+    .select("pros, cons, red_flags, assumptions, open_questions")
+    .eq("conversation_id", conversationId)
+    .eq("owner", side)
+    .maybeSingle();
+  return (data as Ledger | null) ?? emptyLedger();
+}
+
+export type StepResult =
+  | { status: "turn"; turn: TranscriptTurn | null; ended: boolean; endReason: EndReason | null }
+  | { status: "already_ended" }
+  | { status: "skipped" };
+
+// Runs the next turn of a conversation and stores it. "skipped" means another
+// call took this turn first (for example the page is open in two tabs).
+export async function stepConversation(
+  admin: SupabaseClient,
+  conversationId: string,
+): Promise<StepResult> {
+  const { data: conversation } = await admin
+    .from("conversations")
+    .select("id, user_a, user_b, status, turn_count, started_at")
+    .eq("id", conversationId)
+    .single();
+  if (!conversation) throw new Error(`No conversation ${conversationId}.`);
+  if (conversation.status === "ended") return { status: "already_ended" };
+
+  const turn = conversation.turn_count + 1;
+  const side: Side = turn % 2 === 1 ? "a" : "b";
+  const other: Side = side === "a" ? "b" : "a";
+  const userId = side === "a" ? conversation.user_a : conversation.user_b;
+
+  // A failed turn leaves the conversation as it was, so the same turn can be retried.
+  const [prompt, locked, transcript, ledger] = await Promise.all([
+    loadTwinPrompt(admin, userId, { alias: ALIASES[side] }),
+    loadLockedAnswers(admin, userId),
+    loadTranscript(admin, conversationId),
+    loadLedger(admin, conversationId, side),
+  ]);
+  if (!prompt) throw new Error("Both users need a completed profile and a persona card.");
+
+  const result = await runTwinConversationTurn({
+    systemPrompt: prompt + conversationRules(ALIASES[other]),
+    messages: historyFor(side, transcript, turn, ledger),
+    ledger,
+    turn,
+    lockedAnswers: locked,
+  });
+
+  // Claim the turn; if another call already stored it, drop this one.
+  const { data: claimed } = await admin
+    .from("conversations")
+    .update({
+      status: "running",
+      turn_count: turn,
+      started_at: conversation.started_at ?? new Date().toISOString(),
+    })
+    .eq("id", conversationId)
+    .eq("turn_count", conversation.turn_count)
+    .neq("status", "ended")
+    .select("id");
+  if (!claimed?.length) return { status: "skipped" };
+
+  let entry: TranscriptTurn | null = null;
+  if (result.messages.length > 0) {
+    const { error } = await admin.from("messages").insert(
+      result.messages.map((content) => ({ conversation_id: conversationId, speaker: side, content, turn })),
+    );
+    if (error) throw new Error(`Couldn't save messages: ${error.message}`);
+    entry = { speaker: side, turn, messages: result.messages };
+  }
+  const { error: ledgerError } = await admin.from("ledgers").upsert({
+    conversation_id: conversationId,
+    owner: side,
+    ...ledger,
+    updated_at: new Date().toISOString(),
+  });
+  if (ledgerError) throw new Error(`Couldn't save ledger: ${ledgerError.message}`);
+
+  const endReason = result.end ?? (turn >= TURN_CAP ? "turn_cap" : null);
+  if (endReason) await endConversation(admin, conversationId, endReason);
+  return { status: "turn", turn: entry, ended: Boolean(endReason), endReason };
+}
+
+async function endConversation(
+  admin: SupabaseClient,
+  conversationId: string,
+  endReason: EndReason | "error",
+) {
+  await admin
+    .from("conversations")
+    .update({ status: "ended", end_reason: endReason, ended_at: new Date().toISOString() })
+    .eq("id", conversationId);
+}
+
+// Runs a whole conversation in one go (for scripts). 20 turns take a few minutes.
 export async function runConversation(
   admin: SupabaseClient,
   {
@@ -235,95 +365,26 @@ export async function runConversation(
     onTurn,
   }: { userA: string; userB: string; onTurn?: (turn: TranscriptTurn) => void },
 ) {
-  if (userA === userB) throw new Error("A conversation needs two different users.");
-
-  const [promptA, promptB, lockedA, lockedB] = await Promise.all([
-    loadTwinPrompt(admin, userA, { alias: ALIASES.a }),
-    loadTwinPrompt(admin, userB, { alias: ALIASES.b }),
-    loadLockedAnswers(admin, userA),
-    loadLockedAnswers(admin, userB),
-  ]);
-  if (!promptA || !promptB) {
-    throw new Error("Both users need a completed profile and a persona card.");
-  }
-  const twins = {
-    a: { system: promptA + conversationRules(ALIASES.b), locked: lockedA, ledger: emptyLedger() },
-    b: { system: promptB + conversationRules(ALIASES.a), locked: lockedB, ledger: emptyLedger() },
-  };
-
-  const { data: conversation, error } = await admin
-    .from("conversations")
-    .insert({ user_a: userA, user_b: userB, status: "running", started_at: new Date().toISOString() })
-    .select("id")
-    .single();
-  if (error || !conversation) throw new Error(`Couldn't create conversation: ${error?.message}`);
-  const conversationId = conversation.id as string;
-
-  const saveLedger = async (side: Side) => {
-    const { error } = await admin.from("ledgers").upsert({
-      conversation_id: conversationId,
-      owner: side,
-      ...twins[side].ledger,
-      updated_at: new Date().toISOString(),
-    });
-    if (error) throw new Error(`Couldn't save ledger: ${error.message}`);
-  };
-
-  const transcript: TranscriptTurn[] = [];
+  const conversationId = await createConversation(admin, userA, userB);
   let endReason: EndReason = "turn_cap";
   try {
-    await Promise.all([saveLedger("a"), saveLedger("b")]);
-
-    for (let turn = 1; turn <= TURN_CAP; turn++) {
-      const side: Side = turn % 2 === 1 ? "a" : "b";
-      const twin = twins[side];
-      const result = await runTwinConversationTurn({
-        systemPrompt: twin.system,
-        messages: historyFor(side, transcript, turn, twin.ledger),
-        ledger: twin.ledger,
-        turn,
-        lockedAnswers: twin.locked,
-      });
-
-      if (result.messages.length > 0) {
-        const { error: messagesError } = await admin.from("messages").insert(
-          result.messages.map((content) => ({
-            conversation_id: conversationId,
-            speaker: side,
-            content,
-            turn,
-          })),
-        );
-        if (messagesError) throw new Error(`Couldn't save messages: ${messagesError.message}`);
-        const entry = { speaker: side, turn, messages: result.messages };
-        transcript.push(entry);
-        onTurn?.(entry);
-      }
-      await saveLedger(side);
-      await admin.from("conversations").update({ turn_count: turn }).eq("id", conversationId);
-
-      if (result.end) {
-        endReason = result.end;
+    for (;;) {
+      const step = await stepConversation(admin, conversationId);
+      if (step.status !== "turn") break;
+      if (step.turn) onTurn?.(step.turn);
+      if (step.ended) {
+        endReason = step.endReason ?? "turn_cap";
         break;
       }
     }
-
-    await admin
-      .from("conversations")
-      .update({ status: "ended", end_reason: endReason, ended_at: new Date().toISOString() })
-      .eq("id", conversationId);
   } catch (error) {
-    await admin
-      .from("conversations")
-      .update({ status: "ended", end_reason: "error", ended_at: new Date().toISOString() })
-      .eq("id", conversationId);
+    await endConversation(admin, conversationId, "error");
     throw error;
   }
-
-  return {
-    conversationId,
-    endReason,
-    transcript,
-    ledgers: { a: twins.a.ledger, b: twins.b.ledger },
-  };
+  const [transcript, a, b] = await Promise.all([
+    loadTranscript(admin, conversationId),
+    loadLedger(admin, conversationId, "a"),
+    loadLedger(admin, conversationId, "b"),
+  ]);
+  return { conversationId, endReason, transcript, ledgers: { a, b } };
 }
