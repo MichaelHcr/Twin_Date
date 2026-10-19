@@ -37,8 +37,36 @@ async function AuthStatus() {
     );
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name, onboarding_complete")
+    .eq("user_id", user.id)
+    .single();
+
+  const next = !profile?.display_name
+    ? { href: "/onboarding/profile", label: "Build your profile" }
+    : !profile.onboarding_complete
+      ? { href: "/onboarding/interview", label: "Continue your interview" }
+      : { href: "/twin", label: "Meet your twin" };
+
   return (
     <div className="flex flex-col items-center gap-3">
+      {profile?.onboarding_complete && (
+        <p className="rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700 dark:bg-green-950 dark:text-green-400">
+          ✓ Interview complete
+        </p>
+      )}
+      <Link
+        href={next.href}
+        className="rounded-full bg-black px-5 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+      >
+        {next.label}
+      </Link>
+      {profile?.onboarding_complete && (
+        <Link href="/onboarding/profile" className="text-sm text-zinc-600 underline dark:text-zinc-400">
+          Edit profile
+        </Link>
+      )}
       <p className="text-sm text-zinc-500">Signed in as {user.email}</p>
       <form action="/auth/signout" method="post">
         <button className="rounded-full border border-zinc-300 px-4 py-1 text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
