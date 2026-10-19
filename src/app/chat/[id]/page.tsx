@@ -90,19 +90,16 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
   let quiet: { days: number; topics: { intro: string | null; line: string }[] } | null = null;
   const lastMessage = (messages ?? []).at(-1);
   if (lastMessage && quietDays !== null && quietDays >= QUIET_AFTER_DAYS) {
-    // First, threads the twins started that the two of you haven't picked up,
-    // then shared interests; the report's questions only if there are none.
+    // Threads the twins started that the two of you haven't picked up. If
+    // there are none, no nudge.
     const twinTopics = await ensureChatTopics(admin, id, lastMessage.id).catch((): ChatTopic[] | null => null);
     const mine = conversation.user_a === user.id ? "line_for_a" : "line_for_b";
-    quiet = {
-      days: quietDays,
-      topics: twinTopics?.length
-        ? twinTopics.map((t) => ({
-            intro: t.kind === "unfinished" ? `Your twins talked about ${t.about}.` : `You both like ${t.about}.`,
-            line: t[mine],
-          }))
-        : questions.map((q) => ({ intro: "Your twins wondered:", line: q })),
-    };
+    if (twinTopics?.length) {
+      quiet = {
+        days: quietDays,
+        topics: twinTopics.map((t) => ({ intro: `Your twins talked about ${t.about}.`, line: t[mine] })),
+      };
+    }
   }
   // The twins' take, shown at the top of the chat: the report's first sentence.
   // The Judge writes "Member A / Member B"; here that's "you" and their name.

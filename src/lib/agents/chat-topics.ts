@@ -4,9 +4,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 // Topics for a real chat that has gone quiet. Reads the twins' first chat (both
-// people can already see it) and the real chat so far, and picks things the
-// twins talked about that the two people haven't brought up yet, then shared
-// interests. Each topic comes with a short line either person could send.
+// people can already see it) and the real chat so far, and picks specific
+// things the twins talked about (a place, a show, a hobby) that the two people
+// haven't brought up yet. Each comes with a short line either person could send.
 // Cached in chat_topics (migration 0012) until someone sends a new message.
 
 const client = new Anthropic();
@@ -14,22 +14,19 @@ const MODEL = "claude-opus-5-5";
 
 export const TopicSchema = z.object({
   about: z.string().describe("What it's about, 2-8 words, e.g. 'the birria place on 3rd'"),
-  kind: z.enum(["unfinished", "shared"]).describe("unfinished: the twins talked about it, the people haven't; shared: a common interest"),
   line_for_a: z.string().describe("A casual message Member A could send to bring it up, under 20 words, no names"),
   line_for_b: z.string().describe("A casual message Member B could send to bring it up, under 20 words, no names"),
 });
 
 const TopicsSchema = z.object({
-  topics: z.array(TopicSchema).describe("3-5 topics, best first: unfinished threads before shared interests"),
+  topics: z.array(TopicSchema).describe("Up to 5 topics, best first; empty if there's nothing the people haven't covered"),
 });
 
 export type ChatTopic = z.infer<typeof TopicSchema>;
 
 const SYSTEM_PROMPT = `You help two people on Twin Date, a dating app, restart a chat that has gone quiet. Before they matched, their AI twins (Member A and Member B) had a first chat for them. Now the two real people chat, and nobody has written for a couple of days.
 
-Pick 3-5 light, easy topics, best first:
-1. "unfinished": something specific the twins talked about (a place, plan, hobby, story, recommendation) that the real people haven't brought up in their own chat yet.
-2. "shared": a common interest the twins found.
+Pick up to 5 specific things the twins talked about (a place, a show, a hobby, a plan, a story, a recommendation) that the real people haven't brought up in their own chat yet. Only threads from the twins' chat: not general shared interests, not anything the people already discussed. If there are none, return an empty list.
 
 For each, write one casual message each person could send, in their own voice, that brings it up naturally ("Still thinking about that birria place on 3rd. Worth the hype?"). Keep it warm and low-pressure: no heavy topics like kids, money or moving, no names, under 20 words. Only use what's in the chats; don't invent details.`;
 
