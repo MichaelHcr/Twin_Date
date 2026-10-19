@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
+import { ScoreRing } from "@/components/score-ring";
 import { requireUser } from "@/lib/auth";
 import {
   loadDecisionStates,
@@ -161,7 +162,7 @@ async function MatchesGrid() {
                       <span className="text-brand" aria-hidden>
                         ♥
                       </span>{" "}
-                      {m.score}
+                      {m.score}%
                     </p>
                   </Link>
                 </li>
@@ -213,9 +214,7 @@ function ReviewTile({ id, card, request }: { id: string; card: CardData; request
       className={`${CARD} relative flex h-full flex-col p-4 hover:border-zinc-400 dark:hover:border-zinc-600`}
     >
       <span className={`${DOT_ALERT} absolute right-4 top-4`} aria-label="Waiting for your answer" />
-      <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-black text-base font-semibold text-black dark:border-white dark:text-zinc-50">
-        {card.score}
-      </span>
+      <ScoreRing score={card.score} size={52} />
       <p className="mt-3 font-semibold text-black dark:text-zinc-50">
         {card.alias}
         {card.age !== null && `, ${card.age}`}
@@ -267,9 +266,7 @@ function QuietRow({
   return (
     <li className="flex items-center pr-3 hover:bg-zinc-50 dark:hover:bg-zinc-900">
       <Link href={`/matches/${id}`} className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-[1.5px] border-zinc-400 text-sm font-semibold text-zinc-600 dark:text-zinc-300">
-          {card.score}
-        </span>
+        <ScoreRing score={card.score} size={40} className="text-zinc-500 dark:text-zinc-400" />
         <div className="min-w-0 flex-1">
           <p className="font-medium text-black dark:text-zinc-50">
             {card.alias}
