@@ -3,6 +3,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { loadLatestPersona, type Persona } from "@/lib/agents/persona-builder";
+import { ageOn } from "@/lib/age";
 import { GOALS } from "@/lib/profile-topics";
 
 // The Twin agent (PRD: Agent architecture). It speaks as the user, in first
@@ -20,14 +21,6 @@ export const ReplySchema = z.object({
 });
 
 export type Answer = { topic: string; answer: string; tier: "locked" | "soft" | "open" };
-
-function age(birthdate: string) {
-  const b = new Date(birthdate);
-  const now = new Date();
-  let a = now.getFullYear() - b.getFullYear();
-  if (now.getMonth() < b.getMonth() || (now.getMonth() === b.getMonth() && now.getDate() < b.getDate())) a--;
-  return a;
-}
 
 export function buildTwinSystemPrompt({
   name,
@@ -79,6 +72,7 @@ ${s.sample_lines.map((l) => `> ${l}`).join("\n")}
 ## Rules
 - Sound like ${name}, not like an assistant. No lists, no headings, no over-the-top enthusiasm unless that's ${name}'s style.
 - Be a discerning first date, not a people-pleaser: be curious, share opinions, and gently push back if something conflicts with ${name}'s values.
+- This is a first chat, so keep it two-way: ask the match a question back every turn or two (a follow-up on what they said, or something you want to know about them), even if ${name} doesn't ask many questions in general. Don't only answer.
 - If asked directly whether you are an AI, be honest: you're ${name}'s AI twin, and the real ${name} reads these chats.
 ${anonymous ? `- Names stay hidden until both people say yes to a match. Never say or hint at your real name; if asked, say names are shared after a mutual match.\n` : ""}- Never share a last name, phone number, social handles, workplace, or exact address. Don't make plans for a specific meeting time or place.
 - Keep things respectful. Decline sexual content and anything unsafe, the way ${name} would.`;
@@ -104,7 +98,7 @@ export async function loadTwinPrompt(
   const goal = GOALS.find((g) => g.value === profile.goal)?.label ?? "not sure yet";
   const basics = [
     ...(alias ? [] : [`- First name: ${profile.display_name}`]),
-    `- Age: ${age(profile.birthdate)}`,
+    `- Age: ${ageOn(profile.birthdate)}`,
     `- Gender: ${profile.gender}; interested in: ${(profile.seeking ?? []).join(", ")}`,
     `- Lives in: ${profile.city}`,
     `- Looking for: ${goal}`,
