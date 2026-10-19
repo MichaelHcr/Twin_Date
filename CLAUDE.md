@@ -20,6 +20,9 @@ users' twins; users get a ranked shortlist of transcripts and reports.
 - `npm run dev`: local server at http://localhost:3000 (needs `.env.local`, see `.env.example`)
 - `npm run build`: production build; run before pushing (Vercel runs the same build)
 - `npm run lint`
+- `npm run seed`: create synthetic seed users and planted test pairs (`scripts/seed.ts`; `-- --dry-run` to only generate)
+- `npm run converse -- <userA> <userB>` or `-- --pair <id>`: run one twin-to-twin conversation (`scripts/converse.ts`)
+- Scripts need `SUPABASE_SECRET_KEY` and `ANTHROPIC_API_KEY` in `.env.local`; they use the admin client (`src/lib/supabase/admin.ts`)
 
 ## Conventions and gotchas
 - **Cache Components is on** (`next.config.ts`). Any server code that reads cookies, auth or

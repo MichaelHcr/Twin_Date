@@ -13,13 +13,13 @@ import { GOALS } from "@/lib/profile-topics";
 const client = new Anthropic();
 const MODEL = "claude-opus-5-5";
 
-const ReplySchema = z.object({
+export const ReplySchema = z.object({
   messages: z
     .array(z.string())
     .describe("The twin's reply: one message, or 2-4 short messages if the user texts in bursts"),
 });
 
-type Answer = { topic: string; answer: string; tier: "locked" | "soft" | "open" };
+export type Answer = { topic: string; answer: string; tier: "locked" | "soft" | "open" };
 
 function age(birthdate: string) {
   const b = new Date(birthdate);
@@ -34,11 +34,14 @@ export function buildTwinSystemPrompt({
   basics,
   answers,
   persona,
+  anonymous = false,
 }: {
   name: string;
   basics: string;
   answers: Answer[];
   persona: Persona;
+  // Twin-to-twin chats: name is an alias like "Member A", and the twin must not reveal the real name.
+  anonymous?: boolean;
 }) {
   const factsFor = (tier: Answer["tier"]) =>
     answers
@@ -77,11 +80,16 @@ ${s.sample_lines.map((l) => `> ${l}`).join("\n")}
 - Sound like ${name}, not like an assistant. No lists, no headings, no over-the-top enthusiasm unless that's ${name}'s style.
 - Be a discerning first date, not a people-pleaser: be curious, share opinions, and gently push back if something conflicts with ${name}'s values.
 - If asked directly whether you are an AI, be honest: you're ${name}'s AI twin, and the real ${name} reads these chats.
-- Never share a last name, phone number, social handles, workplace, or exact address. Don't make plans for a specific meeting time or place.
+${anonymous ? `- Names stay hidden until both people say yes to a match. Never say or hint at your real name; if asked, say names are shared after a mutual match.\n` : ""}- Never share a last name, phone number, social handles, workplace, or exact address. Don't make plans for a specific meeting time or place.
 - Keep things respectful. Decline sexual content and anything unsafe, the way ${name} would.`;
 }
 
-export async function loadTwinPrompt(supabase: SupabaseClient, userId: string) {
+// With an alias, the user's real name is left out of the prompt entirely (PRD: Key design rules).
+export async function loadTwinPrompt(
+  supabase: SupabaseClient,
+  userId: string,
+  { alias }: { alias?: string } = {},
+) {
   const [{ data: profile }, { data: answers }, latest] = await Promise.all([
     supabase
       .from("profiles")
@@ -95,7 +103,7 @@ export async function loadTwinPrompt(supabase: SupabaseClient, userId: string) {
 
   const goal = GOALS.find((g) => g.value === profile.goal)?.label ?? "not sure yet";
   const basics = [
-    `- First name: ${profile.display_name}`,
+    ...(alias ? [] : [`- First name: ${profile.display_name}`]),
     `- Age: ${age(profile.birthdate)}`,
     `- Gender: ${profile.gender}; interested in: ${(profile.seeking ?? []).join(", ")}`,
     `- Lives in: ${profile.city}`,
@@ -103,10 +111,11 @@ export async function loadTwinPrompt(supabase: SupabaseClient, userId: string) {
   ].join("\n");
 
   return buildTwinSystemPrompt({
-    name: profile.display_name,
+    name: alias ?? profile.display_name,
     basics,
     answers: (answers ?? []) as Answer[],
     persona: latest.persona,
+    anonymous: Boolean(alias),
   });
 }
 
