@@ -42,7 +42,7 @@ export async function POST() {
   if (used >= PLANS[tier].perWeek) {
     return NextResponse.json(
       {
-        error: `You've used all ${PLANS[tier].perWeek} first chats on the ${PLANS[tier].name} plan this week.`,
+        error: `You've used all ${PLANS[tier].perWeek} twin chats on the ${PLANS[tier].name} plan in the last 7 days.`,
         upgrade: tier !== "pro",
       },
       { status: 402 },

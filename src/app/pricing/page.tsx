@@ -21,7 +21,7 @@ export default function PricingPage({ searchParams }: PageProps<"/pricing">) {
           Plans
         </h1>
         <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-          Your plan sets how many first chats your twin has each week.
+          Your plan sets how many twin chats your twin can have each week.
         </p>
         <Suspense fallback={<p className="mt-8 text-zinc-500">Loading…</p>}>
           <PlansLoader searchParams={searchParams} />
@@ -83,7 +83,7 @@ async function PlansLoader({ searchParams }: Pick<PageProps<"/pricing">, "search
       <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-400">
         You&apos;re on <span className="font-medium text-black dark:text-zinc-50">{PLANS[current].name}</span>:
         {" "}
-        {used} of {PLANS[current].perWeek} first chats used in the last 7 days.
+        {used} of {PLANS[current].perWeek} twin chats used in the last 7 days.
         {subscription.period_end && (
           <> Renews on {new Date(subscription.period_end).toLocaleDateString("en-US", { dateStyle: "medium" })}.</>
         )}
@@ -105,7 +105,7 @@ async function PlansLoader({ searchParams }: Pick<PageProps<"/pricing">, "search
                 ${(plan.priceCents / 100).toFixed(2).replace(/\.00$/, "")}
                 <span className="text-sm font-normal text-zinc-500">{tier === "free" ? "" : " / month"}</span>
               </p>
-              <p className="mt-3 text-sm text-zinc-700 dark:text-zinc-300">{plan.perWeek} first chats per week</p>
+              <p className="mt-3 text-sm text-zinc-700 dark:text-zinc-300">{plan.perWeek} twin chats per week</p>
               <p className="text-sm text-zinc-500">{plan.blurb}</p>
               <div className="mt-5 flex-1" />
               {isCurrent ? (
