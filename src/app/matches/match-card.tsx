@@ -6,8 +6,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { CARD, CHIP_FLAG, CHIP_NEUTRAL } from "@/lib/ui";
 
 // A match as a Hinge-style card: who (still anonymous), one big line from the
-// twins' report, their shortest quote as a prompt, and a few tags. Tapping it
-// opens the full report.
+// twins' report, the quote of theirs that matters most (its topic named and
+// key words highlighted), and a few tags. Tapping it opens the full report.
 
 export type CardItem = { id: string; user_a: string; user_b: string };
 
@@ -19,7 +19,7 @@ export type CardData = {
   place: string;
   score: number;
   headline: string;
-  quote: string | null;
+  quote: { text: string; topic: string | null; highlight: string | null } | null;
   tags: Tag[];
 };
 
@@ -72,10 +72,16 @@ export async function loadMatchCards(supabase: SupabaseClient, userId: string, i
     const profile = (profiles ?? []).find((p) => p.user_id === otherId);
     const card = cards[i];
 
-    const quote =
-      (report.evidence_json ?? [])
-        .filter((e) => e.speaker !== mySide)
-        .sort((x, y) => x.quote.length - y.quote.length)[0]?.quote ?? null;
+    // Their most telling quote: the card agent's pick, or else the Judge's first
+    // (the Judge lists the quotes that most support the score).
+    const evidence = report.evidence_json ?? [];
+    const pick = card?.best_quotes.find((q) => evidence[q.index]?.speaker && evidence[q.index].speaker !== mySide);
+    const fallback = evidence.find((e) => e.speaker !== mySide);
+    const quote = pick
+      ? { text: evidence[pick.index].quote, topic: pick.topic || null, highlight: pick.highlight || null }
+      : fallback
+        ? { text: fallback.quote, topic: null, highlight: null }
+        : null;
     const firstSentence = report.summary.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() ?? report.summary;
     const tags: Tag[] = card
       ? card.tags
@@ -98,6 +104,21 @@ export async function loadMatchCards(supabase: SupabaseClient, userId: string, i
     });
   });
   return result;
+}
+
+// The quote with its key words marked, so the point stands out at a glance.
+function Highlighted({ text, part }: { text: string; part: string | null }) {
+  const at = part ? text.toLowerCase().indexOf(part.toLowerCase()) : -1;
+  if (!part || at < 0) return <span className="text-zinc-800 dark:text-zinc-200">{text}</span>;
+  return (
+    <>
+      {text.slice(0, at)}
+      <mark className="rounded bg-amber-100 px-0.5 font-medium text-black dark:bg-amber-900/60 dark:text-zinc-50">
+        {text.slice(at, at + part.length)}
+      </mark>
+      {text.slice(at + part.length)}
+    </>
+  );
 }
 
 function TagChip({ tag }: { tag: Tag }) {
@@ -138,8 +159,12 @@ export function MatchCardView({ data, children }: { data: CardData; children?: R
 
       {data.quote && (
         <div className="mx-5 mt-4 rounded-xl bg-zinc-50 px-4 py-3 dark:bg-zinc-900">
-          <p className="text-xs font-medium text-zinc-500">They said</p>
-          <p className="mt-1 font-serif text-lg leading-snug text-zinc-800 dark:text-zinc-200">“{data.quote}”</p>
+          <p className="text-xs font-medium text-zinc-500">
+            {data.quote.topic ? `On ${data.quote.topic}, they said` : "They said"}
+          </p>
+          <p className="mt-1 font-serif text-lg leading-snug text-zinc-600 dark:text-zinc-400">
+            “<Highlighted text={data.quote.text} part={data.quote.highlight} />”
+          </p>
         </div>
       )}
 

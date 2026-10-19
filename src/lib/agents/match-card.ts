@@ -3,8 +3,9 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
-// The match card's short version of a Judge report: one line and a few tags,
-// like a dating-app card ("Kids: aligned", "Hiking", "Ask: moving?"). It reads
+// The match card's short version of a Judge report: one line, a few tags
+// ("Kids: aligned", "Hiking", "Ask: moving?"), and each member's most telling
+// quote with its topic and key words, like a dating-app card. It reads
 // only the finished report, which both people can already see, and is cached
 // in reports.card_json (migration 0010), so each report is summarized once.
 
@@ -23,6 +24,15 @@ export const MatchCardSchema = z.object({
       }),
     )
     .describe("2-4 tags: things they share (aligned), one open question to ask (ask), dealbreakers (flag)"),
+  best_quotes: z
+    .array(
+      z.object({
+        index: z.number().int().describe("The quote's number in <evidence>"),
+        topic: z.string().describe("1-2 words for what it's about, e.g. 'kids', 'moving', 'money'"),
+        highlight: z.string().describe("The 2-8 words of the quote that matter most, copied exactly"),
+      }),
+    )
+    .describe("For each member, their one quote that says the most about fit (at most one per member)"),
 });
 
 export type MatchCard = z.infer<typeof MatchCardSchema>;
@@ -31,13 +41,14 @@ const SYSTEM_PROMPT = `You write the front of a match card in Twin Date, a datin
 
 - headline: one plain sentence, 8-16 words, about what they share or how they'd fit. No names, no "Member A/B", no scores.
 - tags: 2-4 very short tags. "aligned" for something they share (a value, plan or hobby: "Kids: aligned", "Hiking"). "ask" for the most useful open question, phrased as "Ask: <2-3 words>?" ("Ask: moving?"). "flag" only for a real dealbreaker from the report's red flags.
+- best_quotes: for each member, pick the quote of theirs that tells the other person the most about fit: a clear stance on kids, moving, money, lifestyle or values, not small talk. Name its topic and copy the 2-8 words that carry the point.
 - Use only what the report says. Don't invent shared interests.`;
 
 type Report = {
   summary: string;
   red_flags: string[];
   questions_to_ask: string[];
-  evidence_json: { quote: string; why: string }[];
+  evidence_json: { speaker: "a" | "b"; quote: string; why: string }[];
 };
 
 // Returns the cached card, or writes one. Returns null if the card can't be
@@ -67,13 +78,24 @@ export async function ensureMatchCard(admin: SupabaseClient, conversationId: str
         content: `<summary>${report.summary}</summary>
 <red_flags>${JSON.stringify(report.red_flags ?? [])}</red_flags>
 <questions_to_ask>${JSON.stringify(report.questions_to_ask ?? [])}</questions_to_ask>
-<evidence>${JSON.stringify((report.evidence_json ?? []).map((e) => e.why))}</evidence>`,
+<evidence>
+${(report.evidence_json ?? []).map((e, i) => `${i}. Member ${e.speaker.toUpperCase()}: "${e.quote}" (${e.why})`).join("\n")}
+</evidence>`,
       },
     ],
   });
   const card = response.parsed_output;
   if (response.stop_reason === "refusal" || !card) return null;
   card.tags = card.tags.slice(0, 4);
+  // Keep one valid pick per member, and a highlight only if it's really in the quote.
+  const seen = new Set<string>();
+  card.best_quotes = card.best_quotes.filter((q) => {
+    const e = report.evidence_json?.[q.index];
+    if (!e || seen.has(e.speaker)) return false;
+    seen.add(e.speaker);
+    if (!e.quote.toLowerCase().includes(q.highlight.trim().toLowerCase())) q.highlight = "";
+    return true;
+  });
 
   await admin.from("reports").update({ card_json: card }).eq("conversation_id", conversationId);
   return card;
