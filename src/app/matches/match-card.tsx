@@ -3,11 +3,11 @@ import { ensureMatchCard, type MatchCard } from "@/lib/agents/match-card";
 import { ageOf } from "@/lib/decisions";
 import { TOPICS } from "@/lib/profile-topics";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { CARD, CHIP_FLAG, CHIP_NEUTRAL } from "@/lib/ui";
+import { CHIP_FLAG, CHIP_NEUTRAL } from "@/lib/ui";
 
-// A match as a Hinge-style card: who (still anonymous), one big line from the
-// twins' report, the quote of theirs that matters most (its topic named and
-// key words highlighted), and a few tags. Tapping it opens the full report.
+// What a match card shows: who (still anonymous), one short line from the
+// twins' report, the quote of theirs that matters most (its topic named and key
+// words highlighted), and a few tags. Used by the Matches grid.
 
 export type CardItem = { id: string; user_a: string; user_b: string };
 
@@ -117,7 +117,7 @@ export async function loadMatchCards(supabase: SupabaseClient, userId: string, i
 }
 
 // The quote with its key words marked, so the point stands out at a glance.
-function Highlighted({ text, part }: { text: string; part: string | null }) {
+export function Highlighted({ text, part }: { text: string; part: string | null }) {
   const at = part ? text.toLowerCase().indexOf(part.toLowerCase()) : -1;
   if (!part || at < 0) return <span className="text-zinc-800 dark:text-zinc-200">{text}</span>;
   return (
@@ -131,7 +131,7 @@ function Highlighted({ text, part }: { text: string; part: string | null }) {
   );
 }
 
-function TagChip({ tag }: { tag: Tag }) {
+export function TagChip({ tag }: { tag: Tag }) {
   const icon = tag.kind === "aligned" ? "✓" : tag.kind === "ask" ? "?" : "!";
   return (
     <span className={`${tag.kind === "flag" ? CHIP_FLAG : CHIP_NEUTRAL} max-w-full`}>
@@ -140,59 +140,5 @@ function TagChip({ tag }: { tag: Tag }) {
       </span>
       <span className="truncate">{tag.kind === "ask" ? tag.label.replace(/^Ask:\s*/i, "Ask: ") : tag.label}</span>
     </span>
-  );
-}
-
-export function MatchCardView({ data, children }: { data: CardData; children?: React.ReactNode }) {
-  return (
-    <article className={`${CARD} overflow-hidden`}>
-      <header className="flex items-center justify-between gap-3 px-5 pt-5">
-        <div className="min-w-0">
-          <p className="text-lg font-semibold text-black dark:text-zinc-50">
-            {data.alias}
-            {data.age !== null && `, ${data.age}`}
-          </p>
-          {data.place && <p className="truncate text-sm text-zinc-500">{data.place}</p>}
-        </div>
-        <span className="flex shrink-0 flex-col items-center">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-black text-base font-semibold text-black dark:border-white dark:text-zinc-50">
-            {data.score}
-          </span>
-          <span className="mt-0.5 text-[11px] text-zinc-500">match</span>
-        </span>
-      </header>
-
-      <div className="px-5 pb-1 pt-4">
-        <p className="text-xs font-medium text-violet-700 dark:text-violet-300">Your twins found</p>
-        <p
-          className={`mt-1 line-clamp-3 font-serif leading-snug text-black dark:text-zinc-50 ${
-            data.headline.length > 90 ? "text-xl" : "text-2xl"
-          }`}
-        >
-          {data.headline}
-        </p>
-      </div>
-
-      {data.quote && (
-        <div className="mx-5 mt-4 rounded-xl bg-zinc-50 px-4 py-3 dark:bg-zinc-900">
-          <p className="text-xs font-medium text-zinc-500">
-            {data.quote.topic ? `On ${data.quote.topic}, they said` : "They said"}
-          </p>
-          <p className="mt-1 font-serif text-lg leading-snug text-zinc-600 dark:text-zinc-400">
-            “<Highlighted text={data.quote.text} part={data.quote.highlight} />”
-          </p>
-        </div>
-      )}
-
-      {data.tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 px-5 pt-4">
-          {data.tags.map((t) => (
-            <TagChip key={t.label} tag={t} />
-          ))}
-        </div>
-      )}
-
-      <div className="pt-4">{children}</div>
-    </article>
   );
 }
