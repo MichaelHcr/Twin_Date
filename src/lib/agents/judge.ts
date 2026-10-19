@@ -53,7 +53,7 @@ Weigh relationship goals, kids, money, lifestyle and location, values, and how w
 Rules:
 - Base everything on what was said in the transcript. Twins may improvise on minor topics, so treat ledger assumptions and anything unconfirmed as open questions, not facts.
 - Evidence quotes must be copied exactly from a single message.
-- Call them Member A and Member B. Never include names, contact details, workplaces or addresses.
+- Call them Member A and Member B, and use they/them for both. Never include names, contact details, workplaces or addresses.
 - Be honest and specific, not a cheerleader. A short chat that ended early still gets a fair score for what it showed.`;
 
 function normalize(text: string) {

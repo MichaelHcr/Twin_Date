@@ -70,6 +70,27 @@ const GENDER_PAIRS: [string, string][] = [
   ["woman", "non-binary"],
 ];
 
+// Names and jobs are assigned in code: left alone, Claude reuses the same few names
+// and backstories across separate calls.
+const NAMES: Record<string, string[]> = {
+  woman: ["Aaliyah", "Bea", "Camila", "Dana", "Esther", "Fatima", "Grace", "Hana", "Imani", "Jules",
+    "Keiko", "Leila", "Mónica", "Nadia", "Olga", "Priya", "Rosa", "Sofia", "Tessa", "Valentina"],
+  man: ["Andre", "Ben", "Carlos", "Darius", "Ethan", "Felix", "Gabe", "Hiro", "Isaac", "Jamal",
+    "Kenji", "Luis", "Marcus", "Nikhil", "Omar", "Pete", "Raf", "Sam", "Tariq", "Victor"],
+  "non-binary": ["Ash", "Kai", "Quinn", "River", "Sage", "Robin"],
+};
+const JOBS = [
+  "ER nurse", "high school chemistry teacher", "line cook", "UX designer", "electrician",
+  "public defender", "dental hygienist", "data analyst", "firefighter", "graduate student in history",
+  "real estate agent", "veterinary tech", "software engineer", "barista and part-time musician",
+  "accountant", "physical therapist", "film editor", "union carpenter", "pharmacist",
+  "small bakery owner", "social worker", "airline mechanic", "marketing manager", "librarian",
+  "personal trainer", "architect", "landscape gardener", "translator", "police dispatcher",
+  "tattoo artist", "HR specialist", "middle school counselor", "sommelier", "lab researcher",
+  "bike shop owner", "insurance adjuster", "museum educator", "flight attendant", "paralegal",
+  "nonprofit fundraiser",
+];
+
 const answerShape = Object.fromEntries(
   TOPICS.map((t) => [
     t.key,
@@ -119,7 +140,9 @@ For each pair you get a brief. Produce two adults with a full profile, topic ans
 - Persona card: the summary speaks to the user ("you"). style.sample_lines are 5-10 lines this person would really text, in their exact voice. unknowns lists things a date might ask that the profile doesn't cover.
 - Fictional people only, no celebrities. Keep everything PG-13.`;
 
-function pairPrompt(kind: SeedPair["kind"], brief: string, genders: [string, string]) {
+type Assigned = { gender: string; name: string; job: string };
+
+function pairPrompt(kind: SeedPair["kind"], brief: string, [a, b]: [Assigned, Assigned]) {
   const rules =
     kind === "conflict"
       ? `Plant this dealbreaker conflict: ${brief}
@@ -128,7 +151,9 @@ State it plainly in the relevant topic answers or dealbreakers, so a careful con
 Their locked topics (kids, religion, smoking, relocation, dealbreakers) must not conflict. Give them one or two minor soft differences (money habits, weekends) so it feels real.`;
   return `${rules}
 
-Both must pass the app's hard filters: A is a ${genders[0]} and B is a ${genders[1]}; each one's "seeking" includes the other's gender; each one's age is inside the other's age range; their goals are the same or one is "open".`;
+A is ${a.name}, a ${a.gender} who works as a ${a.job}. B is ${b.name}, a ${b.gender} who works as a ${b.job}. Build each person's life, hobbies and voice around who they are; don't default to climbing, board games, sourdough or a pet cat.
+
+Both must pass the app's hard filters: A is a ${a.gender} and B is a ${b.gender}; each one's "seeking" includes the other's gender; each one's age is inside the other's age range; their goals are the same or one is "open".`;
 }
 
 // Rules that must hold are enforced in code, not only in the prompt.
@@ -157,12 +182,23 @@ async function generatePairs(conflictCount: number, compatibleCount: number) {
     })),
   ];
   const pairs: SeedPair[] = [];
+  const used: Record<string, number> = {};
+  const nextName = (gender: string) => {
+    const list = NAMES[gender];
+    const n = used[gender] ?? 0;
+    used[gender] = n + 1;
+    return n < list.length ? list[n] : `${list[n % list.length]} ${Math.floor(n / list.length) + 1}`;
+  };
 
   for (let i = 0; i < briefs.length; i += CONCURRENCY) {
     const batch = briefs.slice(i, i + CONCURRENCY);
     const results = await Promise.all(
       batch.map(async ({ kind, brief }, j) => {
-        const genders = GENDER_PAIRS[(i + j) % GENDER_PAIRS.length];
+        const people = GENDER_PAIRS[(i + j) % GENDER_PAIRS.length].map((gender, k) => ({
+          gender,
+          name: nextName(gender),
+          job: JOBS[(2 * (i + j) + k) % JOBS.length],
+        })) as [Assigned, Assigned];
         const response = await client.beta.messages.parse({
           model: MODEL,
           max_tokens: 16000,
@@ -170,14 +206,20 @@ async function generatePairs(conflictCount: number, compatibleCount: number) {
           betas: ["server-side-fallback-2026-07-01"],
           fallbacks: "default",
           system: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: pairPrompt(kind, brief, genders) }],
+          messages: [{ role: "user", content: pairPrompt(kind, brief, people) }],
         });
         if (response.stop_reason === "refusal" || !response.parsed_output) {
           console.warn(`  skipped "${brief}" (stop_reason: ${response.stop_reason})`);
           return null;
         }
-        console.log(`  ${kind}: ${response.parsed_output.a.display_name} + ${response.parsed_output.b.display_name}`);
-        return { ...response.parsed_output, kind };
+        const pair = response.parsed_output;
+        // The assigned identity wins over whatever the model wrote.
+        pair.a.display_name = people[0].name;
+        pair.b.display_name = people[1].name;
+        pair.a.gender = people[0].gender as SeedPersona["gender"];
+        pair.b.gender = people[1].gender as SeedPersona["gender"];
+        console.log(`  ${kind}: ${pair.a.display_name} + ${pair.b.display_name}`);
+        return { ...pair, kind };
       }),
     );
     pairs.push(...results.filter((p): p is SeedPair => p !== null));
