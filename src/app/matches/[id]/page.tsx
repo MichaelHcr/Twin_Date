@@ -135,7 +135,7 @@ async function MatchLoader({ params }: { params: Promise<{ id: string }> }) {
         </p>
       </section>
 
-      {report && <DecisionBar supabase={supabase} conversation={conversation} userId={user.id} />}
+      {report && <DecisionBar supabase={supabase} conversation={conversation} />}
     </div>
   );
 }

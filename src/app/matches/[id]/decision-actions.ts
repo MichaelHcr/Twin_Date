@@ -3,14 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
-import {
-  DECISIONS,
-  isConnected,
-  SEED_YES_SCORE,
-  wantsToMeet,
-  type Decision,
-  type DecisionRow,
-} from "@/lib/decisions";
+import { DECISIONS, loadDecisionStates, SEED_YES_SCORE, wantsToMeet, type Decision } from "@/lib/decisions";
 import { single } from "@/lib/matches";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -20,7 +13,6 @@ type Conversation = {
   status: string;
   end_reason: string | null;
   reports: { score: number } | { score: number }[] | null;
-  decisions: DecisionRow[] | null;
 };
 
 // Saves the signed-in user's Yes, Pass or connection request on a match report.
@@ -35,7 +27,7 @@ export async function decide(conversationId: string, decision: Decision) {
   // Row-level security returns the conversation only to its two participants.
   const { data } = await supabase
     .from("conversations")
-    .select("user_a, user_b, status, end_reason, reports(score), decisions(user_id, decision)")
+    .select("user_a, user_b, status, end_reason, reports(score)")
     .eq("id", conversationId)
     .maybeSingle();
   const conversation = data as Conversation | null;
@@ -45,10 +37,9 @@ export async function decide(conversationId: string, decision: Decision) {
     return { error: "Wait for the report before deciding." };
   }
 
-  const rows = conversation.decisions ?? [];
-  const mine = rows.find((r) => r.user_id === user.id)?.decision;
-  const theirs = rows.find((r) => r.user_id !== user.id)?.decision;
-  if (isConnected(mine, theirs)) return { error: "You're already connected, so this can't change." };
+  // The database also refuses changes once connected (migration 0007).
+  const state = (await loadDecisionStates(supabase, conversationId)).get(conversationId);
+  if (state?.connected) return { error: "You're already connected, so this can't change." };
 
   const { error } = await supabase
     .from("decisions")
@@ -58,7 +49,7 @@ export async function decide(conversationId: string, decision: Decision) {
   // Nobody will ever answer for a seed member, so when a real user wants to meet
   // one, record the seed's answer from the Judge's score. That lets the demo reach
   // a match. Real members always decide for themselves.
-  if (wantsToMeet(parsed.data.decision) && !theirs) {
+  if (wantsToMeet(parsed.data.decision)) {
     const otherId = conversation.user_a === user.id ? conversation.user_b : conversation.user_a;
     const admin = createAdminClient();
     const { data: other } = await admin
@@ -68,11 +59,20 @@ export async function decide(conversationId: string, decision: Decision) {
       .single();
     if (other?.is_seed) {
       const seedSaysYes = report.score >= SEED_YES_SCORE && conversation.end_reason !== "red_flag";
-      await admin.from("decisions").insert({
-        conversation_id: conversationId,
-        user_id: otherId,
-        decision: seedSaysYes ? "yes" : "pass",
-      });
+      // ignoreDuplicates: a seed answers once, and keeps that answer.
+      const { error: seedError } = await admin.from("decisions").upsert(
+        { conversation_id: conversationId, user_id: otherId, decision: seedSaysYes ? "yes" : "pass" },
+        { onConflict: "conversation_id,user_id", ignoreDuplicates: true },
+      );
+      if (seedError) {
+        // Undo this user's choice too, so trying again runs both steps.
+        const mine = admin.from("decisions");
+        const previous = state?.mine ?? null;
+        await (previous
+          ? mine.update({ decision: previous }).eq("conversation_id", conversationId).eq("user_id", user.id)
+          : mine.delete().eq("conversation_id", conversationId).eq("user_id", user.id));
+        return { error: `Couldn't record the demo member's answer, so nothing changed: ${seedError.message}. Try again.` };
+      }
     }
   }
 

@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { cache } from "react";
 import { Avatar } from "@/components/avatar";
-import { decisionState, loadRevealedProfiles, wantsToMeet, type DecisionRow, type RevealedProfile } from "@/lib/decisions";
+import { loadDecisionStates, loadRevealedProfiles, NO_DECISION, wantsToMeet, type RevealedProfile } from "@/lib/decisions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DecisionButtons, type DecisionOption } from "./decision-buttons";
 
@@ -11,13 +11,9 @@ type Conversation = { id: string; user_a: string; user_b: string; end_reason: st
 const CARD =
   "rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950";
 
-// Both parts of the page read the same decisions; cache() makes it one query per request.
-const loadState = cache(async (supabase: SupabaseClient, conversationId: string, userId: string) => {
-  const { data } = await supabase
-    .from("decisions")
-    .select("user_id, decision")
-    .eq("conversation_id", conversationId);
-  return decisionState((data ?? []) as DecisionRow[], userId);
+// Both parts of the page read the same state; cache() makes it one query per request.
+const loadState = cache(async (supabase: SupabaseClient, conversationId: string) => {
+  return (await loadDecisionStates(supabase, conversationId)).get(conversationId) ?? NO_DECISION;
 });
 
 // The Yes / Pass choice is still open: either nothing decided yet, or they sent a
@@ -26,9 +22,9 @@ const needsAnswer = (state: Awaited<ReturnType<typeof loadState>>) =>
   !state.connected && !wantsToMeet(state.mine) && (state.mine === null || state.theyRequested);
 
 // Above the report: the reveal once both people want to meet, or where things
-// stand after this user has answered. Runs on the server, so the browser only
-// ever learns whether they're connected or sent a request, never the other
-// side's yes or pass.
+// stand after this user has answered. Row-level security and
+// public.decision_states (migration 0007) only ever tell a user whether they're
+// connected or the other side sent a request, never the other side's yes or pass.
 export async function DecisionStatus({
   supabase,
   conversation,
@@ -38,7 +34,7 @@ export async function DecisionStatus({
   conversation: Conversation;
   userId: string;
 }) {
-  const state = await loadState(supabase, conversation.id, userId);
+  const state = await loadState(supabase, conversation.id);
 
   if (state.connected) {
     const otherId = conversation.user_a === userId ? conversation.user_b : conversation.user_a;
@@ -81,13 +77,11 @@ export async function DecisionStatus({
 export async function DecisionBar({
   supabase,
   conversation,
-  userId,
 }: {
   supabase: SupabaseClient;
   conversation: Conversation;
-  userId: string;
 }) {
-  const state = await loadState(supabase, conversation.id, userId);
+  const state = await loadState(supabase, conversation.id);
   if (!needsAnswer(state)) return null;
 
   let title = "Would you like to meet?";
