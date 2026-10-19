@@ -1,8 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
-import { signPhotoUrls } from "@/lib/photos";
-import { PhotoManager } from "./photo-manager";
+import { OwnPhotos } from "./own-photos";
 
 // Your own photos. Nobody else sees them until you both say yes to a match.
 export default function PhotosPage() {
@@ -19,19 +17,9 @@ export default function PhotosPage() {
           Hidden from everyone, including twins, until you and a match both say yes.
         </p>
         <Suspense fallback={<p className="mt-8 text-zinc-500">Loading…</p>}>
-          <PhotosLoader />
+          <OwnPhotos />
         </Suspense>
       </div>
     </main>
   );
-}
-
-async function PhotosLoader() {
-  const { supabase, user } = await requireUser();
-  const { data } = await supabase.from("profiles").select("photos").eq("user_id", user.id).single();
-  const paths = (data?.photos ?? []) as string[];
-  // Your own client can sign your own files (migration 0006 policies).
-  const urls = await signPhotoUrls(supabase, paths);
-  const photos = paths.flatMap((path, i) => (urls[i] ? [{ path, url: urls[i] }] : []));
-  return <PhotoManager userId={user.id} photos={photos} />;
 }

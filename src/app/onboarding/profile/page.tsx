@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { requireUser } from "@/lib/auth";
 import { TOPICS } from "@/lib/profile-topics";
+import { OwnPhotos } from "@/app/photos/own-photos";
 import { ProfileForm } from "./profile-form";
 
 export default function ProfilePage() {
@@ -14,6 +15,16 @@ export default function ProfilePage() {
           Your twin uses this to represent you. Anything you skip, your twin&apos;s
           interviewer will ask about.
         </p>
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold text-black dark:text-zinc-50">Photos</h2>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            Hidden from everyone, including your twin, until you and a match both say yes.
+            Photos save as soon as you add them.
+          </p>
+          <Suspense fallback={<p className="mt-4 text-zinc-500">Loading…</p>}>
+            <OwnPhotos />
+          </Suspense>
+        </section>
         <Suspense fallback={<p className="mt-8 text-zinc-500">Loading…</p>}>
           <ProfileLoader />
         </Suspense>
