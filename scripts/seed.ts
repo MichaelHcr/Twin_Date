@@ -140,7 +140,14 @@ For each pair you get a brief. Produce two adults with a full profile, topic ans
 - Persona card: the summary speaks to the user ("you"). style.sample_lines are 5-10 lines this person would really text, in their exact voice. unknowns lists things a date might ask that the profile doesn't cover.
 - Fictional people only, no celebrities. Keep everything PG-13.`;
 
-type Assigned = { gender: string; name: string; job: string };
+type Assigned = { gender: string; name: string; job: string; age: number };
+
+// Ages are assigned too, mostly 22-35 so student testers find matches; partners are
+// within a few years of each other.
+function agesFor(i: number): [number, number] {
+  const a = 22 + ((i * 5) % 14);
+  return [a, a + ((i % 4) - 1)];
+}
 
 function pairPrompt(kind: SeedPair["kind"], brief: string, [a, b]: [Assigned, Assigned]) {
   const rules =
@@ -151,7 +158,7 @@ State it plainly in the relevant topic answers or dealbreakers, so a careful con
 Their locked topics (kids, religion, smoking, relocation, dealbreakers) must not conflict. Give them one or two minor soft differences (money habits, weekends) so it feels real.`;
   return `${rules}
 
-A is ${a.name}, a ${a.gender} who works as a ${a.job}. B is ${b.name}, a ${b.gender} who works as a ${b.job}. Build each person's life, hobbies and voice around who they are; don't default to climbing, board games, sourdough or a pet cat.
+A is ${a.name}, a ${a.age}-year-old ${a.gender} who works as a ${a.job}. B is ${b.name}, a ${b.age}-year-old ${b.gender} who works as a ${b.job}. Build each person's life, hobbies and voice around who they are; don't default to climbing, board games, sourdough or a pet cat.
 
 Both must pass the app's hard filters: A is a ${a.gender} and B is a ${b.gender}; each one's "seeking" includes the other's gender; each one's age is inside the other's age range; their goals are the same or one is "open".`;
 }
@@ -163,8 +170,9 @@ function alignPair(pair: SeedPair, city: string) {
     [pair.b, pair.a],
   ]) {
     if (!self.seeking.includes(other.gender)) self.seeking.push(other.gender);
-    self.age_min = Math.max(18, Math.min(self.age_min, other.age));
-    self.age_max = Math.max(self.age_max, other.age, self.age_min);
+    // Wide enough to include the partner and people a few years either side.
+    self.age_min = Math.max(18, Math.min(self.age_min, other.age, self.age - 4));
+    self.age_max = Math.max(self.age_max, other.age, self.age + 4);
   }
   if (pair.a.goal !== pair.b.goal && pair.a.goal !== "open" && pair.b.goal !== "open") {
     pair.b.goal = pair.a.goal;
@@ -198,6 +206,7 @@ async function generatePairs(conflictCount: number, compatibleCount: number) {
           gender,
           name: nextName(gender),
           job: JOBS[(2 * (i + j) + k) % JOBS.length],
+          age: agesFor(i + j)[k],
         })) as [Assigned, Assigned];
         const response = await client.beta.messages.parse({
           model: MODEL,
@@ -216,6 +225,8 @@ async function generatePairs(conflictCount: number, compatibleCount: number) {
         // The assigned identity wins over whatever the model wrote.
         pair.a.display_name = people[0].name;
         pair.b.display_name = people[1].name;
+        pair.a.age = people[0].age;
+        pair.b.age = people[1].age;
         pair.a.gender = people[0].gender as SeedPersona["gender"];
         pair.b.gender = people[1].gender as SeedPersona["gender"];
         console.log(`  ${kind}: ${pair.a.display_name} + ${pair.b.display_name}`);

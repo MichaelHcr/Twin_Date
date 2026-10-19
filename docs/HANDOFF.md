@@ -20,7 +20,8 @@ Tue Oct 20 night.**
 | Seed personas script (step 2) | Done, on branch, not run yet | `scripts/seed.ts`, migration `0004` (**not applied yet**) |
 | Twin-to-twin Orchestrator v1 (step 3) | Done, on branch, tested against mocks only | `src/lib/agents/orchestrator.ts`, `scripts/converse.ts` |
 | Judge agent + `/matches` shortlist + `/matches/[id]` report (step 4) | Done, on branch | `src/lib/agents/judge.ts`, `scripts/judge.ts`, `src/app/matches` |
-| Scout, Stripe | Not started | See next steps |
+| Scout + "Find my next match" + live chat page | Done, on branch; needs `SUPABASE_SECRET_KEY` on Vercel | `src/lib/agents/scout.ts`, `src/app/api/matches/find`, `src/app/api/conversations/[id]/step` |
+| Stripe | Not started | See next steps |
 
 **Branch to continue from:** `feature/profile-onboarding`. It is pushed but **not merged into
 `main` yet**: the live site still shows only sign-in.
@@ -57,6 +58,12 @@ To run it locally:
    emails/user IDs, for example two real test accounts. The Judge runs at the end.
 5. End-to-end check: `npm run converse -- <your email> seed+2@twindate.test`, then open
    http://localhost:3000/matches signed in as yourself.
+
+Web flow: `/matches` → "Find my next match" → the Scout filters (gender both ways, both age
+ranges, goal, city, has a twin, not met before) and Claude ranks the rest → a queued
+conversation → `/matches/[id]` drives it one turn per request (`/api/conversations/[id]/step`)
+while the page is open, then one more request writes the Judge's report. One unfinished chat
+per user at a time. All state is in the database, so a closed page just resumes later.
 
 Design notes: twins see each other as "Member A"/"Member B" and the real first name is left out
 of their prompts. `flag_red_flag` is refused unless the topic is one of the flagging user's own

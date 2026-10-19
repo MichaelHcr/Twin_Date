@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { END_REASON_LABELS, scoreColor } from "@/lib/matches";
+import { LiveRunner } from "./live-runner";
 
 // One match: the Judge's report and the anonymized transcript.
 export default function MatchPage({ params }: PageProps<"/matches/[id]">) {
@@ -54,8 +55,12 @@ async function MatchLoader({ params }: { params: Promise<{ id: string }> }) {
   const mySide = user.id === conversation.user_a ? "a" : "b";
   const who = (side: string) => (side === mySide ? "Your twin" : "Their twin");
 
+  const unfinished =
+    conversation.status !== "ended" || (!report && conversation.end_reason !== "error");
+
   return (
     <div className="mt-6 flex flex-col gap-6">
+      {unfinished && <LiveRunner conversationId={conversation.id} />}
       {report ? (
         <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
           <div className="flex items-center gap-4">
@@ -102,9 +107,11 @@ async function MatchLoader({ params }: { params: Promise<{ id: string }> }) {
           </ul>
         </section>
       ) : (
-        <p className="rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
-          {conversation.status === "ended" ? "The report is being written." : "Your twin is still chatting."}
-        </p>
+        conversation.end_reason === "error" && (
+          <p className="rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+            This chat stopped because of an error, so there&apos;s no report.
+          </p>
+        )
       )}
 
       <section>
