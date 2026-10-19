@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { signPhotoUrls } from "@/lib/photos";
 
 // Yes / Pass / connection requests on a match report (PRD: Users and core flow,
 // steps 9-10). A "yes" or "pass" stays private. A "request" is shown to the other
@@ -38,6 +39,8 @@ export type RevealedProfile = {
   age: number | null;
   city: string | null;
   isSeed: boolean;
+  // Signed URLs, main photo first; empty if they haven't added any.
+  photoUrls: string[];
 };
 
 function ageOf(birthdate: string | null) {
@@ -49,16 +52,19 @@ function ageOf(birthdate: string | null) {
   return a;
 }
 
-// Reads other people's real profiles, which row-level security hides from the
-// browser. Pass the admin client, and call this only for users you've checked
-// with isConnected.
+// Reads other people's real profiles and photos, which row-level security hides
+// from the browser. Pass the admin client, and call this only for users you've
+// checked with isConnected.
 export async function loadRevealedProfiles(admin: SupabaseClient, userIds: string[]) {
   const { data } = await admin
     .from("profiles")
-    .select("user_id, display_name, birthdate, city, is_seed")
+    .select("user_id, display_name, birthdate, city, is_seed, photos")
     .in("user_id", userIds);
+  const rows = data ?? [];
+  const urls = await signPhotoUrls(admin, rows.flatMap((p) => (p.photos ?? []) as string[]));
+  const urlByPath = new Map(rows.flatMap((p) => (p.photos ?? []) as string[]).map((path, i) => [path, urls[i]]));
   return new Map<string, RevealedProfile>(
-    (data ?? []).map((p) => [
+    rows.map((p) => [
       p.user_id,
       {
         userId: p.user_id,
@@ -66,6 +72,7 @@ export async function loadRevealedProfiles(admin: SupabaseClient, userIds: strin
         age: ageOf(p.birthdate),
         city: p.city,
         isSeed: Boolean(p.is_seed),
+        photoUrls: ((p.photos ?? []) as string[]).flatMap((path) => urlByPath.get(path) ?? []),
       },
     ]),
   );

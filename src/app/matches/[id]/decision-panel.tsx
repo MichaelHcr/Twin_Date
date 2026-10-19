@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { decisionState, loadRevealedProfiles, type DecisionRow, type RevealedProfile } from "@/lib/decisions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DecisionButtons, type DecisionOption } from "./decision-buttons";
@@ -97,9 +98,7 @@ function RevealCard({ conversationId, profile }: { conversationId: string; profi
     <section className="rounded-2xl border border-green-200 bg-green-50 p-6 dark:border-green-900 dark:bg-green-950">
       <p className="text-sm font-medium text-green-700 dark:text-green-400">You both said yes</p>
       <div className="mt-3 flex items-center gap-4">
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-xl font-semibold text-green-800 dark:bg-black dark:text-green-300">
-          {profile.name.charAt(0).toUpperCase()}
-        </span>
+        <Avatar name={profile.name} url={profile.photoUrls[0]} className="h-16 w-16 text-xl" />
         <div>
           <p className="text-xl font-semibold text-black dark:text-zinc-50">
             {profile.name}
@@ -108,6 +107,16 @@ function RevealCard({ conversationId, profile }: { conversationId: string; profi
           {profile.city && <p className="text-sm text-zinc-600 dark:text-zinc-400">{profile.city}</p>}
         </div>
       </div>
+      {profile.photoUrls.length > 1 && (
+        <ul className="mt-4 grid grid-cols-3 gap-2">
+          {profile.photoUrls.slice(1).map((url, i) => (
+            <li key={url}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt={`${profile.name}, photo ${i + 2}`} className="aspect-[4/5] w-full rounded-xl object-cover" />
+            </li>
+          ))}
+        </ul>
+      )}
       {profile.isSeed && (
         <p className="mt-4 rounded-lg bg-white px-3 py-2 text-xs text-zinc-600 dark:bg-black dark:text-zinc-400">
           Demo profile: this member is synthetic, and their yes was simulated from the report&apos;s score.
@@ -119,7 +128,7 @@ function RevealCard({ conversationId, profile }: { conversationId: string; profi
       >
         Open chat
       </Link>
-      <p className="mt-4 text-xs text-zinc-500">Only the two of you can see each other&apos;s details.</p>
+      <p className="mt-4 text-xs text-zinc-500">Only the two of you can see each other&apos;s details and photos.</p>
     </section>
   );
 }

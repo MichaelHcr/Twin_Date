@@ -21,6 +21,9 @@ export default function MatchesPage() {
         <Link href="/connections" className="mt-2 self-start text-sm font-medium text-zinc-700 hover:underline dark:text-zinc-300">
           Your connections →
         </Link>
+        <Link href="/photos" className="mt-1 self-start text-sm font-medium text-zinc-700 hover:underline dark:text-zinc-300">
+          Your photos →
+        </Link>
         <FindMatchButton />
         <Suspense fallback={<p className="mt-8 text-zinc-500">Loading…</p>}>
           <MatchesLoader />

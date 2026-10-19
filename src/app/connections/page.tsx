@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { requireUser } from "@/lib/auth";
 import { decisionState, loadRevealedProfiles, wantsToMeet, type DecisionRow } from "@/lib/decisions";
 import { scoreColor, single } from "@/lib/matches";
@@ -101,9 +102,7 @@ async function ConnectionsLoader() {
               return (
                 <li key={c.id}>
                   <Link href={`/chat/${c.id}`} className={item}>
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-green-100 text-lg font-semibold text-green-800 dark:bg-green-950 dark:text-green-300">
-                      {(p?.name ?? "?").charAt(0).toUpperCase()}
-                    </span>
+                    <Avatar name={p?.name ?? "?"} url={p?.photoUrls[0]} />
                     <div>
                       <p className="font-medium text-black dark:text-zinc-50">
                         {p?.name ?? "Your match"}

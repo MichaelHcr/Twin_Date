@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Avatar } from "@/components/avatar";
 import { requireUser } from "@/lib/auth";
 import { decisionState, loadRevealedProfiles, type DecisionRow } from "@/lib/decisions";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -66,7 +67,10 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
   return (
     <div className="mt-2 flex flex-col">
       <ChatLiveUpdates conversationId={id} />
-      <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">{name}</h1>
+      <div className="flex items-center gap-3">
+        <Avatar name={name} url={other?.photoUrls[0]} />
+        <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">{name}</h1>
+      </div>
       <p className="mt-1 text-sm text-zinc-500">
         {[other?.age != null ? `${other.age}` : null, other?.city].filter(Boolean).join(" · ")}
         {" · "}
