@@ -158,7 +158,7 @@ async function runTwinConversationTurn({
       }
       ledger.red_flags.push(`${topic}: ${conflict} (they said: "${their_words}")`);
       end = "red_flag";
-      return "Red flag recorded. The conversation ends after this turn: send a short, kind goodbye now.";
+      return "Red flag recorded. The conversation ends after this turn. If this answered any of your open questions, update them with update_ledger, then send a short, kind goodbye.";
     },
   });
 

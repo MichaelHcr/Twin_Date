@@ -19,7 +19,8 @@ Tue Oct 20 night.**
 | Server-side admin client (step 1) | Done, on branch, needs `SUPABASE_SECRET_KEY` | `src/lib/supabase/admin.ts` |
 | Seed personas script (step 2) | Done, on branch, not run yet | `scripts/seed.ts`, migration `0004` (**not applied yet**) |
 | Twin-to-twin Orchestrator v1 (step 3) | Done, on branch, tested against mocks only | `src/lib/agents/orchestrator.ts`, `scripts/converse.ts` |
-| Scout, Judge, shortlist, Stripe | Not started | See next steps |
+| Judge agent + `/matches` shortlist + `/matches/[id]` report (step 4) | Done, on branch | `src/lib/agents/judge.ts`, `scripts/judge.ts`, `src/app/matches` |
+| Scout, Stripe | Not started | See next steps |
 
 **Branch to continue from:** `feature/profile-onboarding`. It is pushed but **not merged into
 `main` yet**: the live site still shows only sign-in.
@@ -53,7 +54,9 @@ To run it locally:
    10 compatible pairs = 40 users by default; change with `--conflict N --compatible N`).
    `--from scripts/output/seed-personas.json` inserts saved personas without new Claude calls.
 4. `npm run converse -- --list-pairs`, then `npm run converse -- --pair 1`. Or pass two
-   emails/user IDs, for example two real test accounts.
+   emails/user IDs, for example two real test accounts. The Judge runs at the end.
+5. End-to-end check: `npm run converse -- <your email> seed+2@twindate.test`, then open
+   http://localhost:3000/matches signed in as yourself.
 
 Design notes: twins see each other as "Member A"/"Member B" and the real first name is left out
 of their prompts. `flag_red_flag` is refused unless the topic is one of the flagging user's own

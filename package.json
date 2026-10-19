@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
-    "converse": "tsx --env-file=.env.local scripts/converse.ts"
+    "converse": "tsx --env-file=.env.local scripts/converse.ts",
+    "judge": "tsx --env-file=.env.local scripts/judge.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

@@ -22,6 +22,7 @@ users' twins; users get a ranked shortlist of transcripts and reports.
 - `npm run lint`
 - `npm run seed`: create synthetic seed users and planted test pairs (`scripts/seed.ts`; `-- --dry-run` to only generate)
 - `npm run converse -- <userA> <userB>` or `-- --pair <id>`: run one twin-to-twin conversation (`scripts/converse.ts`)
+- `npm run judge -- <conversationId>` or `-- --all`: write Judge reports (`converse` already runs the Judge at the end)
 - Scripts need `SUPABASE_SECRET_KEY` and `ANTHROPIC_API_KEY` in `.env.local`; they use the admin client (`src/lib/supabase/admin.ts`)
 
 ## Conventions and gotchas

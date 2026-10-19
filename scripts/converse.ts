@@ -3,14 +3,17 @@
 //   npm run converse -- <userA> <userB>     user IDs or emails (e.g. seed+1@twindate.test)
 //   npm run converse -- --pair 3            a planted test pair from seed_pairs
 //   npm run converse -- --list-pairs        show the planted test pairs
+//   add --no-judge to skip the Judge report at the end
 //
-// The conversation, messages and both ledgers are saved to Supabase.
+// The conversation, messages, both ledgers and the Judge's report are saved to Supabase.
 // Needs SUPABASE_SECRET_KEY and ANTHROPIC_API_KEY in .env.local.
 
 import { parseArgs } from "node:util";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { judgeConversation } from "@/lib/agents/judge";
 import { runConversation } from "@/lib/agents/orchestrator";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { printReport } from "./print-report";
 
 async function resolveUser(admin: SupabaseClient, idOrEmail: string) {
   if (!idOrEmail.includes("@")) return idOrEmail;
@@ -29,6 +32,7 @@ async function main() {
     options: {
       pair: { type: "string" },
       "list-pairs": { type: "boolean", default: false },
+      "no-judge": { type: "boolean", default: false },
     },
   });
   const admin = createAdminClient();
@@ -79,6 +83,11 @@ async function main() {
   console.log(`\nEnded: ${result.endReason}. Conversation id: ${result.conversationId}`);
   console.log(`\nLedger A:\n${JSON.stringify(result.ledgers.a, null, 2)}`);
   console.log(`\nLedger B:\n${JSON.stringify(result.ledgers.b, null, 2)}`);
+
+  if (!values["no-judge"]) {
+    console.log("\nJudging...");
+    printReport(await judgeConversation(admin, result.conversationId));
+  }
 }
 
 main().catch((error) => {
