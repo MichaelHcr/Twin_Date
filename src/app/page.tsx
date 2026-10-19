@@ -63,6 +63,11 @@ async function AuthStatus() {
         {next.label}
       </Link>
       {profile?.onboarding_complete && (
+        <Link href="/matches" className="text-sm font-medium text-black underline dark:text-zinc-50">
+          Your matches
+        </Link>
+      )}
+      {profile?.onboarding_complete && (
         <Link href="/onboarding/profile" className="text-sm text-zinc-600 underline dark:text-zinc-400">
           Edit profile
         </Link>

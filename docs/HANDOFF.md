@@ -16,7 +16,11 @@ Tue Oct 20 night.**
 | Persona Builder agent (summary + texting style) | Done, on branch | `src/lib/agents/persona-builder.ts` |
 | Twin agent + "Talk to your twin" page | Done, on branch | `src/lib/agents/twin.ts`, `src/app/twin` |
 | Teammate testing of the onboarding flow | **In progress** | Vercel preview of `feature/profile-onboarding` |
-| Seed personas, Scout, twin-to-twin Orchestrator, Judge, shortlist, Stripe | Not started | See next steps |
+| Server-side admin client (step 1) | Done, on branch, needs `SUPABASE_SECRET_KEY` | `src/lib/supabase/admin.ts` |
+| Seed personas script (step 2) | Done, on branch, not run yet | `scripts/seed.ts`, migration `0004` (**not applied yet**) |
+| Twin-to-twin Orchestrator v1 (step 3) | Done, on branch, tested against mocks only | `src/lib/agents/orchestrator.ts`, `scripts/converse.ts` |
+| Judge agent + `/matches` shortlist + `/matches/[id]` report (step 4) | Done, on branch | `src/lib/agents/judge.ts`, `scripts/judge.ts`, `src/app/matches` |
+| Scout, Stripe | Not started | See next steps |
 
 **Branch to continue from:** `feature/profile-onboarding`. It is pushed but **not merged into
 `main` yet**: the live site still shows only sign-in.
@@ -38,6 +42,27 @@ Tue Oct 20 night.**
 Collect teammates' preview feedback (1-5 "sounds like me" ratings, anything broken). Fix any
 blockers, then open a PR from `feature/profile-onboarding` and merge it. Start new work on a
 fresh branch from `main`.
+
+### Steps 1-3: built, waiting to be run for real
+Code is on branch `claude/elegant-goldberg-bzfv6a` (stacked on `feature/profile-onboarding`).
+To run it locally:
+1. Run `supabase/migrations/0004_seed_and_conversations.sql` in the Supabase SQL Editor
+   (adds `profiles.is_seed`, the `seed_pairs` table, and the `not_a_fit`/`error` end reasons).
+2. Add `SUPABASE_SECRET_KEY` to `.env.local`.
+3. `npm run seed -- --dry-run --conflict 1 --compatible 1` and read `scripts/output/seed-personas.json`.
+   If the personas look good: `npm run seed -- --cities "<your testers' city>"` (10 conflict +
+   10 compatible pairs = 40 users by default; change with `--conflict N --compatible N`).
+   `--from scripts/output/seed-personas.json` inserts saved personas without new Claude calls.
+4. `npm run converse -- --list-pairs`, then `npm run converse -- --pair 1`. Or pass two
+   emails/user IDs, for example two real test accounts. The Judge runs at the end.
+5. End-to-end check: `npm run converse -- <your email> seed+2@twindate.test`, then open
+   http://localhost:3000/matches signed in as yourself.
+
+Design notes: twins see each other as "Member A"/"Member B" and the real first name is left out
+of their prompts. `flag_red_flag` is refused unless the topic is one of the flagging user's own
+locked answers; `end_conversation` is refused before turn 6. A full 20-turn chat takes a few
+minutes, so it runs from a script for now; a web trigger needs a background job or
+one-turn-per-request.
 
 ### 1. Server-side Supabase access (~20 min), needed by everything below
 Twin conversations, ledgers, reports and seed users are written by the server, not by a
