@@ -110,9 +110,9 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
 
       <button
         disabled={pending}
-        className="rounded-lg bg-black px-4 py-3 font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+        className="sticky bottom-4 rounded-full bg-black px-6 py-3.5 text-base font-semibold text-white shadow-xl hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
       >
-        {pending ? "Saving…" : "Save"}
+        {pending ? "Saving…" : "Save profile"}
       </button>
     </form>
   );

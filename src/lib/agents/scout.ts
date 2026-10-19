@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { sameCity } from "@/lib/matches";
 
 // The Scout (PRD: Agent architecture). Hard filters run in code: mutual gender
 // preference, both age ranges, compatible goals, same city, a built twin, and no
@@ -84,7 +85,6 @@ export async function scoutMatches(admin: SupabaseClient, userId: string, limit 
       .neq("user_id", userId)
       .in("gender", me.seeking)
       .contains("seeking", [me.gender])
-      .ilike("city", me.city)
       .returns<Profile[]>(),
     admin
       .from("conversations")
@@ -99,6 +99,7 @@ export async function scoutMatches(admin: SupabaseClient, userId: string, limit 
     const age = ageOf(p.birthdate);
     return (
       !met.has(p.user_id) &&
+      sameCity(p.city, me.city) &&
       hasTwin.has(p.user_id) &&
       age >= me.age_min &&
       age <= me.age_max &&

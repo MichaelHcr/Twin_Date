@@ -6,6 +6,7 @@
 // Needs SUPABASE_SECRET_KEY in .env.local.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { sameCity } from "@/lib/matches";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type Profile = {
@@ -77,7 +78,7 @@ async function main() {
   // Same order and rules as scoutMatches() in src/lib/agents/scout.ts.
   const steps: [string, (p: Profile) => boolean][] = [
     ["finished onboarding", (p) => p.onboarding_complete],
-    [`same city ("${me.city}")`, (p) => (p.city ?? "").toLowerCase() === (me.city ?? "").toLowerCase()],
+    [`same city ("${me.city}")`, (p) => sameCity(p.city, me.city)],
     [`is a gender you seek (${me.seeking.join("/")})`, (p) => me.seeking.includes(p.gender)],
     [`seeks your gender (${me.gender})`, (p) => p.seeking.includes(me.gender)],
     [`their age is in your range (${me.age_min}-${me.age_max})`, (p) => ageOf(p.birthdate) >= me.age_min && ageOf(p.birthdate) <= me.age_max],

@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import {
   conversationsThisWeek,
@@ -11,15 +10,14 @@ import {
 } from "@/lib/billing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CheckoutButton, ManageBillingButton } from "./plan-buttons";
+import { BackLink } from "@/components/back-link";
 
 export default function PricingPage({ searchParams }: PageProps<"/pricing">) {
   return (
     <main className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 font-sans dark:bg-black">
       <div className="flex w-full max-w-3xl flex-col">
-        <Link href="/" className="text-sm text-zinc-500 hover:underline">
-          ← Home
-        </Link>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
+        <BackLink href="/">Home</BackLink>
+        <h1 className="mt-5 text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
           Plans
         </h1>
         <p className="mt-1 text-zinc-600 dark:text-zinc-400">

@@ -32,11 +32,11 @@ export function FindMatchButton() {
   }
 
   return (
-    <div className="mt-6">
+    <div>
       <button
         onClick={find}
         disabled={pending}
-        className="rounded-full bg-black px-5 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+        className="rounded-full bg-black px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
       >
         {pending ? "Finding someone…" : "Find my next match"}
       </button>

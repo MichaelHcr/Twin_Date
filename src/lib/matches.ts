@@ -20,3 +20,11 @@ export function scoreColor(score: number) {
 export function single<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
 }
+
+// Cities are typed freely ("Los Angeles", "los angeles, CA", "Los Angeles,CA"), so
+// matching compares only the name before the first comma, ignoring case and spaces.
+export function sameCity(a: string | null | undefined, b: string | null | undefined) {
+  const name = (city: string | null | undefined) =>
+    (city ?? "").split(",")[0].trim().replace(/\s+/g, " ").toLowerCase();
+  return name(a) !== "" && name(a) === name(b);
+}
