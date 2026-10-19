@@ -90,6 +90,8 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
             </p>
           )}
           <ChatMessages
+            otherName={name}
+            otherPhotoUrl={other?.photoUrls[0] ?? null}
             messages={(messages ?? []).map((m) => ({
               id: m.id,
               mine: m.sender_id === user.id,
