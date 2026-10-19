@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
+import { ShortTime } from "@/components/local-time";
 import { requireUser } from "@/lib/auth";
-import { decisionState, loadRevealedProfiles, wantsToMeet, type DecisionRow } from "@/lib/decisions";
+import { loadChatSummaries } from "@/lib/chat";
+import { loadDecisionStates, loadRevealedProfiles, NO_DECISION, wantsToMeet } from "@/lib/decisions";
 import { scoreColor, single } from "@/lib/matches";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BackLink } from "@/components/back-link";
@@ -33,33 +35,39 @@ type Row = {
   user_a: string;
   user_b: string;
   reports: { score: number } | { score: number }[] | null;
-  decisions: DecisionRow[] | null;
 };
 
 async function ConnectionsLoader() {
   const { supabase, user } = await requireUser();
   // Row-level security only returns conversations this user is part of.
-  const { data, error } = await supabase
-    .from("conversations")
-    .select("id, user_a, user_b, reports(score), decisions(user_id, decision)")
-    .eq("status", "ended")
-    .order("created_at", { ascending: false });
+  const [{ data, error }, states] = await Promise.all([
+    supabase
+      .from("conversations")
+      .select("id, user_a, user_b, reports(score)")
+      .eq("status", "ended")
+      .order("created_at", { ascending: false }),
+    loadDecisionStates(supabase),
+  ]);
   if (error) return <p className="mt-8 text-red-600">{error.message}</p>;
 
   const connected: { id: string; otherId: string }[] = [];
   const requests: { id: string; score: number | null }[] = [];
   for (const c of (data ?? []) as Row[]) {
-    const state = decisionState(c.decisions ?? [], user.id);
+    const state = states.get(c.id) ?? NO_DECISION;
     if (state.connected) {
       connected.push({ id: c.id, otherId: c.user_a === user.id ? c.user_b : c.user_a });
     } else if (state.theyRequested && !wantsToMeet(state.mine)) {
       requests.push({ id: c.id, score: single(c.reports)?.score ?? null });
     }
   }
-  const profiles =
+  const [profiles, chats] = await Promise.all([
     connected.length > 0
-      ? await loadRevealedProfiles(createAdminClient(), connected.map((c) => c.otherId))
-      : new Map();
+      ? loadRevealedProfiles(createAdminClient(), connected.map((c) => c.otherId))
+      : new Map(),
+    loadChatSummaries(supabase),
+  ]);
+  // Most recent conversation first; chats nobody has written in yet go last.
+  connected.sort((x, y) => (chats.get(y.id)?.lastAt ?? "").localeCompare(chats.get(x.id)?.lastAt ?? ""));
 
   const item = "flex items-center gap-4 rounded-2xl border p-4";
   const plain = `${item} border-zinc-200 bg-white hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600`;
@@ -107,22 +115,40 @@ async function ConnectionsLoader() {
           <ul className="mt-3 flex flex-col gap-3">
             {connected.map((c) => {
               const p = profiles.get(c.otherId);
+              const chat = chats.get(c.id);
+              const unread = chat?.unread ?? 0;
               return (
                 <li key={c.id}>
-                  <Link href={`/chat/${c.id}`} className={plain}>
+                  <Link href={`/chat/${c.id}`} className={unread > 0 ? urgent : plain}>
                     <Avatar name={p?.name ?? "?"} url={p?.photoUrls[0]} className="h-16 w-16 text-xl" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-lg font-semibold text-black dark:text-zinc-50">
-                        {p?.name ?? "Your match"}
-                        {p?.age != null && `, ${p.age}`}
-                      </p>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className="truncate text-lg font-semibold text-black dark:text-zinc-50">
+                          {p?.name ?? "Your match"}
+                          {p?.age != null && `, ${p.age}`}
+                        </p>
+                        {chat && <ShortTime iso={chat.lastAt} className="shrink-0 text-xs text-zinc-500" />}
+                      </div>
                       <p className="text-sm text-zinc-500">
                         {[p?.city, p?.isSeed ? "Demo profile" : null].filter(Boolean).join(" · ")}
                       </p>
+                      <p
+                        className={`mt-1 truncate text-sm ${
+                          unread > 0 ? "font-semibold text-black dark:text-zinc-50" : "text-zinc-600 dark:text-zinc-400"
+                        }`}
+                      >
+                        {chat ? `${chat.lastFromMe ? "You: " : ""}${chat.lastContent}` : "No messages yet. Say hi!"}
+                      </p>
                     </div>
-                    <span className="shrink-0 rounded-full bg-black px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black">
-                      Chat
-                    </span>
+                    {unread > 0 ? (
+                      <span className="shrink-0 rounded-full bg-amber-500 px-3 py-1.5 text-sm font-semibold text-white">
+                        {unread} new
+                      </span>
+                    ) : (
+                      <span className="shrink-0 rounded-full bg-black px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black">
+                        Chat
+                      </span>
+                    )}
                   </Link>
                 </li>
               );

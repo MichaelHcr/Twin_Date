@@ -2,15 +2,16 @@ import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Avatar } from "@/components/avatar";
 import { FindMatchButton } from "@/app/matches/find-button";
-import { decisionState, loadRevealedProfiles, wantsToMeet, type DecisionRow } from "@/lib/decisions";
+import { loadChatSummaries } from "@/lib/chat";
+import { loadDecisionStates, loadRevealedProfiles, NO_DECISION, wantsToMeet } from "@/lib/decisions";
 import { scoreColor, single } from "@/lib/matches";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type Row = {
+  id: string;
   user_a: string;
   user_b: string;
   reports: { score: number } | { score: number }[] | null;
-  decisions: DecisionRow[] | null;
 };
 
 const CARD =
@@ -19,9 +20,12 @@ const CARD =
 // The home page once onboarding is done: the two places people come back for.
 export async function HomeDashboard({ supabase, userId }: { supabase: SupabaseClient; userId: string }) {
   // Row-level security only returns conversations this user is part of.
-  const { data } = await supabase
-    .from("conversations")
-    .select("user_a, user_b, reports(score), decisions(user_id, decision)");
+  const [{ data }, states, chatSummaries] = await Promise.all([
+    supabase.from("conversations").select("id, user_a, user_b, reports(score)"),
+    loadDecisionStates(supabase),
+    loadChatSummaries(supabase),
+  ]);
+  const unreadMessages = [...chatSummaries.values()].reduce((sum, c) => sum + c.unread, 0);
 
   let chats = 0;
   let yourCall = 0;
@@ -33,7 +37,7 @@ export async function HomeDashboard({ supabase, userId }: { supabase: SupabaseCl
     const report = single(c.reports);
     if (!report) continue;
     topScore = Math.max(topScore ?? 0, report.score);
-    const state = decisionState(c.decisions ?? [], userId);
+    const state = states.get(c.id) ?? NO_DECISION;
     if (state.connected) connectedIds.push(c.user_a === userId ? c.user_b : c.user_a);
     else if (state.theyRequested && !wantsToMeet(state.mine)) requests++;
     else if (state.mine === null) yourCall++;
@@ -89,6 +93,11 @@ export async function HomeDashboard({ supabase, userId }: { supabase: SupabaseCl
             ? "People you both said yes to show up here, with a chat."
             : `${connectedIds.length} connected.`}
         </p>
+        {unreadMessages > 0 && (
+          <Waiting>
+            {unreadMessages} new {unreadMessages === 1 ? "message" : "messages"}
+          </Waiting>
+        )}
         {requests > 0 && (
           <Waiting>
             {requests} connection {requests === 1 ? "request" : "requests"} waiting

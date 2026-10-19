@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { AccountMenu } from "@/components/account-menu";
+import { ChatNotifier } from "@/components/chat-notifier";
 import { NavLink } from "@/components/nav-link";
-import { decisionState, wantsToMeet, type DecisionRow } from "@/lib/decisions";
+import { loadChatSummaries } from "@/lib/chat";
+import { loadDecisionStates, NO_DECISION, wantsToMeet, type DecisionState } from "@/lib/decisions";
 import { single } from "@/lib/matches";
 import { signPhotoUrls } from "@/lib/photos";
 import { createClient } from "@/lib/supabase/server";
@@ -22,8 +24,8 @@ export function HeaderShell({ children }: { children?: React.ReactNode }) {
 }
 
 type Row = {
+  id: string;
   reports: { score: number } | { score: number }[] | null;
-  decisions: DecisionRow[] | null;
 };
 
 export async function SiteHeader() {
@@ -45,20 +47,24 @@ export async function SiteHeader() {
     );
   }
 
-  const [{ data: profile }, { data: conversations }] = await Promise.all([
+  const [{ data: profile }, { data: conversations }, states, chats] = await Promise.all([
     supabase.from("profiles").select("display_name, photos, onboarding_complete").eq("user_id", user.id).single(),
     // Row-level security only returns conversations this user is part of.
-    supabase.from("conversations").select("reports(score), decisions(user_id, decision)").eq("status", "ended"),
+    supabase.from("conversations").select("id, reports(score)").eq("status", "ended"),
+    // Badges are extras: if decisions can't load, show none rather than break every page.
+    loadDecisionStates(supabase).catch(() => new Map<string, DecisionState>()),
+    loadChatSummaries(supabase),
   ]);
+  const unreadChats = [...chats.values()].filter((c) => c.unread > 0).length;
 
-  // Badges: matches waiting for a yes or pass, requests waiting for an answer,
-  // and people already connected.
+  // Badges: matches waiting for a yes or pass; on Connections, requests waiting
+  // for an answer plus chats with unread messages, or else how many are connected.
   let yourCall = 0;
   let requests = 0;
   let connected = 0;
   for (const c of (conversations ?? []) as Row[]) {
     if (!single(c.reports)) continue;
-    const state = decisionState(c.decisions ?? [], user.id);
+    const state = states.get(c.id) ?? NO_DECISION;
     if (state.connected) connected++;
     else if (state.theyRequested && !wantsToMeet(state.mine)) requests++;
     else if (state.mine === null) yourCall++;
@@ -74,12 +80,17 @@ export async function SiteHeader() {
           <NavLink href="/matches" count={yourCall} urgent>
             Matches
           </NavLink>
-          <NavLink href="/connections" count={requests || connected} urgent={requests > 0}>
+          <NavLink
+            href="/connections"
+            count={requests + unreadChats || connected}
+            urgent={requests + unreadChats > 0}
+          >
             Connections
           </NavLink>
         </nav>
       )}
       <AccountMenu name={name} email={user.email ?? ""} photoUrl={photoUrl} />
+      <ChatNotifier userId={user.id} />
     </HeaderShell>
   );
 }
