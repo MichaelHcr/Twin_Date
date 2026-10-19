@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { ensureMatchCard, type MatchCard } from "@/lib/agents/match-card";
 import { ageOf, wantsToMeet, type Decision, type DecisionState } from "@/lib/decisions";
 import { GOALS, TOPICS } from "@/lib/profile-topics";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -64,7 +65,7 @@ export async function MatchDeck({
   const otherId = mySide === "a" ? top.user_b : top.user_a;
   const admin = createAdminClient();
 
-  const [{ data: report }, { data: other }, { data: answers }] = await Promise.all([
+  const [{ data: report }, { data: other }, { data: answers }, card] = await Promise.all([
     supabase
       .from("reports")
       .select("summary, score, evidence_json, red_flags, questions_to_ask")
@@ -74,6 +75,8 @@ export async function MatchDeck({
     admin.from("profiles").select("birthdate, city, goal").eq("user_id", otherId).single(),
     // Only compared here to say "aligned"; the answers themselves aren't shown.
     admin.from("profile_answers").select("user_id, topic, answer").in("user_id", [userId, otherId]).in("topic", ALIGNABLE),
+    // The short card version of the report; null falls back to the report's own text.
+    ensureMatchCard(admin, top.id).catch((): MatchCard | null => null),
   ]);
   if (!report) return null;
 
@@ -84,9 +87,20 @@ export async function MatchDeck({
     return mine && mine !== "not sure yet" && mine === answerOf(otherId, t);
   }).map((t) => `${TOPICS.find((x) => x.key === t)?.label ?? t}: aligned`);
 
-  const quote = ((report.evidence_json ?? []) as Evidence[]).find((e) => e.speaker !== mySide);
-  const redFlags = (report.red_flags ?? []) as string[];
-  const toAsk = ((report.questions_to_ask ?? []) as string[]).slice(0, 1);
+  // Their shortest quoted line reads best on a card.
+  const quote = ((report.evidence_json ?? []) as Evidence[])
+    .filter((e) => e.speaker !== mySide)
+    .sort((x, y) => x.quote.length - y.quote.length)[0];
+  const firstSentence = report.summary.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() ?? report.summary;
+  const headline = card?.headline ?? firstSentence;
+  const chipFor = { aligned: CHIP_ALIGNED, ask: CHIP_ASK, flag: CHIP_FLAG } as const;
+  const tags = card
+    ? card.tags.map((t) => ({ label: t.label, tone: chipFor[t.kind] }))
+    : [
+        ...aligned.map((label) => ({ label, tone: CHIP_ALIGNED })),
+        ...((report.red_flags ?? []) as string[]).map((label) => ({ label, tone: CHIP_FLAG })),
+        ...((report.questions_to_ask ?? []) as string[]).slice(0, 1).map((q) => ({ label: `Ask: ${q}`, tone: CHIP_ASK })),
+      ];
   const age = ageOf(other?.birthdate ?? null);
   const goal = other?.goal ? (SHORT_GOALS[other.goal] ?? GOALS.find((g) => g.value === other.goal)?.label) : null;
 
@@ -121,7 +135,7 @@ export async function MatchDeck({
             </div>
           </div>
 
-          <p className="mt-4 leading-7 text-zinc-700 dark:text-zinc-300">{report.summary}</p>
+          <p className="mt-4 text-lg leading-7 text-zinc-800 dark:text-zinc-200">{headline}</p>
 
           {quote && (
             <p className="mt-3 border-l-2 border-pink-300 pl-3 text-zinc-700 dark:border-pink-800 dark:text-zinc-300">
@@ -129,21 +143,11 @@ export async function MatchDeck({
             </p>
           )}
 
-          {(aligned.length > 0 || redFlags.length > 0 || toAsk.length > 0) && (
+          {tags.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
-              {aligned.map((a) => (
-                <span key={a} className={CHIP_ALIGNED}>
-                  {a}
-                </span>
-              ))}
-              {redFlags.map((f) => (
-                <span key={f} className={CHIP_FLAG}>
-                  {f}
-                </span>
-              ))}
-              {toAsk.map((q) => (
-                <span key={q} className={`${CHIP_ASK} max-w-full truncate`}>
-                  Ask: {q}
+              {tags.map((t) => (
+                <span key={t.label} className={`${t.tone} max-w-full truncate text-sm`}>
+                  {t.label}
                 </span>
               ))}
             </div>
