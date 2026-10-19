@@ -7,7 +7,8 @@ import { useChatRoom } from "./room";
 // The message bar at the bottom of the chat: a pill-shaped box that grows with
 // the text, and a round send button. Enter sends; Shift+Enter adds a new line.
 // While the chat is young, the report's "questions to ask" show as starters.
-// When it has gone quiet for a couple of days, one of them is offered instead.
+// When it has gone quiet for a couple of days, a topic is offered instead:
+// something the twins talked about that you haven't, with a line to send.
 export function ChatComposer({
   conversationId,
   starters = [],
@@ -15,7 +16,7 @@ export function ChatComposer({
 }: {
   conversationId: string;
   starters?: string[];
-  quiet?: { days: number; topics: string[] } | null;
+  quiet?: { days: number; topics: { intro: string | null; line: string }[] } | null;
 }) {
   const [text, setText] = useState("");
   const [topic, setTopic] = useState(0);
@@ -72,11 +73,12 @@ export function ChatComposer({
               ×
             </button>
           </div>
-          <p className="mt-0.5">Your twins wondered: “{current}”</p>
+          {current.intro && <p className="mt-0.5">{current.intro}</p>}
+          <p className="mt-1 font-medium">“{current.line}”</p>
           <div className="mt-2 flex gap-2">
             <button
               onClick={() => {
-                fill(current);
+                fill(current.line);
                 setDismissed(true);
               }}
               className="rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-white dark:text-black"

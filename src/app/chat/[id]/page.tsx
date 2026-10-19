@@ -6,6 +6,7 @@ import { DaysAgo } from "@/components/local-time";
 import { requireUser } from "@/lib/auth";
 import { loadDecisionStates, loadRevealedProfiles } from "@/lib/decisions";
 import { signPhotoUrls } from "@/lib/photos";
+import { ensureChatTopics, type ChatTopic } from "@/lib/agents/chat-topics";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BTN_PILL, CARD, COLUMN, PAGE, TWIN_NOTE } from "@/lib/ui";
 import { ChatComposer } from "./composer";
@@ -86,7 +87,23 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
   const starters = (messages ?? []).length < 6 ? questions.slice(0, 4) : [];
   // Gone quiet: nobody has written for QUIET_AFTER_DAYS, so offer a topic.
   const quietDays = daysSince((messages ?? []).at(-1)?.created_at ?? null);
-  const quiet = quietDays !== null && quietDays >= QUIET_AFTER_DAYS ? { days: quietDays, topics: questions } : null;
+  let quiet: { days: number; topics: { intro: string | null; line: string }[] } | null = null;
+  const lastMessage = (messages ?? []).at(-1);
+  if (lastMessage && quietDays !== null && quietDays >= QUIET_AFTER_DAYS) {
+    // First, threads the twins started that the two of you haven't picked up,
+    // then shared interests; the report's questions only if there are none.
+    const twinTopics = await ensureChatTopics(admin, id, lastMessage.id).catch((): ChatTopic[] | null => null);
+    const mine = conversation.user_a === user.id ? "line_for_a" : "line_for_b";
+    quiet = {
+      days: quietDays,
+      topics: twinTopics?.length
+        ? twinTopics.map((t) => ({
+            intro: t.kind === "unfinished" ? `Your twins talked about ${t.about}.` : `You both like ${t.about}.`,
+            line: t[mine],
+          }))
+        : questions.map((q) => ({ intro: "Your twins wondered:", line: q })),
+    };
+  }
   // The twins' take, shown at the top of the chat: the report's first sentence.
   // The Judge writes "Member A / Member B"; here that's "you" and their name.
   const mySide = conversation.user_a === user.id ? "A" : "B";
