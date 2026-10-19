@@ -118,9 +118,14 @@ function ProfileHero({
             {photoCount > 0 ? `${photoCount}/${MAX_PHOTOS} photos` : "No photos yet"}
           </span>
           {interviewDone ? (
-            <span className={`${chip} bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300`}>
-              ✓ Twin ready
-            </span>
+            <>
+              <span className={`${chip} bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300`}>
+                ✓ Twin ready
+              </span>
+              <Link href="/twin" className={`${chip} bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black`}>
+                Talk to your twin →
+              </Link>
+            </>
           ) : (
             name && (
               <Link href="/onboarding/interview" className={`${chip} bg-amber-100 text-amber-800 hover:underline dark:bg-amber-950 dark:text-amber-300`}>
