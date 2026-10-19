@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Avatar } from "@/components/avatar";
 import { formatClock, formatDay, useIsClient } from "@/components/local-time";
-import { BUBBLE_MINE } from "@/lib/ui";
+import { BUBBLE_MINE, BUBBLE_THEIRS } from "@/lib/ui";
 import { toggleHeart } from "./actions";
 import { useChatRoom } from "./room";
 
@@ -103,7 +103,7 @@ export function ChatMessages({
                   : `cursor-default whitespace-pre-wrap break-words px-4 py-2 text-[15px] leading-snug ${corners(m.mine, joinsPrev, joinsNext)} ${
                       m.mine
                         ? BUBBLE_MINE
-                        : "bg-zinc-100 text-black dark:bg-zinc-800 dark:text-zinc-50"
+                        : BUBBLE_THEIRS
                     }`
               }
             >

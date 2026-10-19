@@ -2,7 +2,8 @@
 // Mostly black, white and grey, like Instagram and Hinge. Color is kept for
 // small signals, each with one meaning:
 //   brand (pink)  liking: the Yes heart and hearts on messages
-//   blue          you: your chat bubbles, and unread chats
+//   blue          unread chats
+//   light purple  your own messages in the real chat
 //   red           something needs you (badges), and dealbreakers
 //   violet        what the AI twins found or wrote
 
@@ -39,6 +40,8 @@ export const TWIN_NOTE =
 export const DOT_UNREAD = "h-2.5 w-2.5 shrink-0 rounded-full bg-blue-500";
 export const DOT_ALERT = "h-2.5 w-2.5 shrink-0 rounded-full bg-red-500";
 
-// Your chat bubbles, and the ring around new matches (Instagram's story ring).
-export const BUBBLE_MINE = "bg-blue-500 text-white";
+// The real chat between two people: your bubbles light purple, theirs white.
+// Also the ring around new matches (Instagram's story ring).
+export const BUBBLE_MINE = "bg-violet-100 text-violet-950 dark:bg-violet-900 dark:text-violet-50";
+export const BUBBLE_THEIRS = "border border-zinc-200 bg-white text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50";
 export const STORY_RING = "rounded-full bg-gradient-to-tr from-amber-400 via-pink-500 to-violet-600 p-[2.5px]";
