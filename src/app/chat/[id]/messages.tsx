@@ -100,7 +100,7 @@ export function ChatMessages({
                   ? "cursor-default select-none px-1 text-4xl leading-tight"
                   : `cursor-default whitespace-pre-wrap break-words px-4 py-2 text-[15px] leading-snug ${corners(m.mine, joinsPrev, joinsNext)} ${
                       m.mine
-                        ? "bg-gradient-to-br from-rose-500 to-fuchsia-600 text-white shadow-sm"
+                        ? "bg-brand text-white"
                         : "bg-zinc-100 text-black dark:bg-zinc-800 dark:text-zinc-50"
                     }`
               }
@@ -109,7 +109,7 @@ export function ChatMessages({
             </div>
             {hearted && (
               <span
-                className={`absolute -bottom-3 flex items-center gap-0.5 rounded-full border border-zinc-200 bg-white px-1.5 py-0.5 text-rose-500 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 ${
+                className={`absolute -bottom-3 flex items-center gap-0.5 rounded-full border border-zinc-200 bg-white px-1.5 py-0.5 text-brand shadow-sm dark:border-zinc-700 dark:bg-zinc-900 ${
                   m.mine ? "left-2" : "right-2"
                 }`}
               >
@@ -126,8 +126,8 @@ export function ChatMessages({
             aria-label={m.heartedByMe ? "Remove your heart" : "Heart this message"}
             className={`shrink-0 self-center rounded-full p-1.5 transition ${
               m.heartedByMe
-                ? "text-rose-500"
-                : "text-zinc-300 opacity-0 hover:text-rose-500 group-hover:opacity-100 focus-visible:opacity-100 dark:text-zinc-600"
+                ? "text-brand"
+                : "text-zinc-300 opacity-0 hover:text-brand group-hover:opacity-100 focus-visible:opacity-100 dark:text-zinc-600"
             }`}
           >
             <Heart className="h-4 w-4" />

@@ -50,7 +50,7 @@ export function ChatComposer({ conversationId, starters = [] }: { conversationId
                   box.current?.focus();
                 });
               }}
-              className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-left text-xs font-medium text-rose-800 hover:border-rose-400 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200"
+              className="shrink-0 rounded-full border border-pink-200 bg-brand-soft px-3 py-1.5 text-left text-xs font-medium text-brand-ink hover:border-brand dark:border-pink-900 dark:bg-pink-950 dark:text-pink-200"
             >
               {s}
             </button>
@@ -81,10 +81,10 @@ export function ChatComposer({ conversationId, starters = [] }: { conversationId
           onClick={send}
           disabled={pending || !text.trim()}
           aria-label="Send"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-fuchsia-600 text-white shadow-md transition hover:brightness-110 disabled:from-zinc-300 disabled:to-zinc-300 disabled:shadow-none dark:disabled:from-zinc-700 dark:disabled:to-zinc-700"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-white transition hover:bg-brand-hover disabled:bg-zinc-300 dark:disabled:bg-zinc-700"
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden>
-            <path d="M5 12h13M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M12 19V5M6 11l6-6 6 6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
       </div>

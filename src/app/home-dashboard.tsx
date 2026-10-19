@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Avatar } from "@/components/avatar";
+import { TwinBadge } from "@/components/twin-icon";
 import { FindMatchButton } from "@/app/matches/find-button";
 import { loadChatSummaries } from "@/lib/chat";
 import { loadDecisionStates, loadRevealedProfiles, NO_DECISION, wantsToMeet } from "@/lib/decisions";
@@ -51,7 +52,10 @@ export async function HomeDashboard({ supabase, userId }: { supabase: SupabaseCl
     <div className="mt-10 grid w-full max-w-3xl gap-4 sm:grid-cols-2">
       <section className={CARD}>
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">Matches</h2>
+          <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
+            <TwinBadge className="h-9 w-9" iconClassName="h-6 w-6" />
+            Matches
+          </h2>
           {topScore !== null && (
             <span className={`rounded-full px-3 py-1 text-sm font-semibold ${scoreColor(topScore)}`}>
               Top {topScore}

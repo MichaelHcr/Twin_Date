@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ageOf, wantsToMeet, type Decision, type DecisionState } from "@/lib/decisions";
-import { END_REASON_LABELS, scoreColor } from "@/lib/matches";
+import { TwinBadge } from "@/components/twin-icon";
+import { END_REASON_LABELS } from "@/lib/matches";
+import { GOALS } from "@/lib/profile-topics";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DeckActions } from "./deck-actions";
 
@@ -41,8 +43,8 @@ export async function MatchDeck({
       .select("score, summary, evidence_json, red_flags, questions_to_ask")
       .eq("conversation_id", top.id)
       .single(),
-    // Age only: names, photos and cities stay hidden until both say yes.
-    createAdminClient().from("profiles").select("birthdate").eq("user_id", otherId).single(),
+    // Age, city and goal only: names and photos stay hidden until both say yes.
+    createAdminClient().from("profiles").select("birthdate, city, goal").eq("user_id", otherId).single(),
   ]);
   if (!report) return null;
 
@@ -50,6 +52,8 @@ export async function MatchDeck({
   const redFlags = (report.red_flags ?? []) as string[];
   const toAsk = ((report.questions_to_ask ?? []) as string[]).slice(0, 2);
   const age = ageOf(other?.birthdate ?? null);
+  const goal = GOALS.find((g) => g.value === other?.goal)?.label ?? null;
+  const alias = `Member ${mySide === "a" ? "B" : "A"}`;
 
   let yes: Decision = "yes";
   let yesLabel = "Yes";
@@ -81,24 +85,26 @@ export async function MatchDeck({
           <div className="absolute inset-x-8 -bottom-4 h-full rounded-3xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950" />
         )}
 
-        <article className="relative rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <article className="relative rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5 dark:border-zinc-800 dark:bg-zinc-950">
           {note && (
             <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">
               {note}
             </p>
           )}
+          <div className="rounded-2xl bg-zinc-50 p-5 dark:bg-zinc-900">
           <div className="flex items-center gap-4">
-            <span
-              className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-2xl font-semibold ring-4 ring-rose-100 dark:ring-rose-950 ${scoreColor(report.score)}`}
-            >
+            <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-[3px] border-brand bg-white text-3xl font-semibold text-brand-ink dark:bg-zinc-950 dark:text-pink-300">
               {report.score}
             </span>
-            <div>
+            <div className="min-w-0">
               <p className="text-xl font-semibold text-black dark:text-zinc-50">
-                Your match{age !== null && <span className="font-normal text-zinc-500">, {age}</span>}
+                {alias}
+                {age !== null && `, ${age}`}
               </p>
-              <p className="text-sm text-zinc-500">
-                {top.end_reason ? END_REASON_LABELS[top.end_reason] : "First chat done"}
+              <p className="text-sm text-zinc-500">{[other?.city, goal].filter(Boolean).join(" · ")}</p>
+              <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-violet-700 dark:text-violet-300">
+                <TwinBadge className="h-5 w-5" iconClassName="h-3.5 w-3.5" />
+                {top.end_reason ? END_REASON_LABELS[top.end_reason] : "Your twins had a first chat"}
               </p>
             </div>
           </div>
@@ -106,12 +112,9 @@ export async function MatchDeck({
           <p className="mt-4 leading-7 text-zinc-800 dark:text-zinc-200">{report.summary}</p>
 
           {theirQuotes.length > 0 && (
-            <ul className="mt-4 flex flex-col gap-2">
+            <ul className="mt-3 flex flex-col gap-2">
               {theirQuotes.map((q) => (
-                <li
-                  key={q.quote}
-                  className="rounded-2xl rounded-tl-md bg-zinc-100 px-4 py-2 text-sm text-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
-                >
+                <li key={q.quote} className="border-l-2 border-pink-300 pl-3 text-sm text-zinc-700 dark:border-pink-800 dark:text-zinc-300">
                   “{q.quote}”
                 </li>
               ))}
@@ -132,6 +135,7 @@ export async function MatchDeck({
               ))}
             </div>
           )}
+          </div>
 
           <DeckActions
             conversationId={top.id}

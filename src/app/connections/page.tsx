@@ -90,10 +90,8 @@ async function Inbox() {
               return (
                 <li key={c.id} className="shrink-0">
                   <Link href={`/chat/${c.id}`} className="flex w-20 flex-col items-center gap-1.5 text-center">
-                    <span className="rounded-full bg-gradient-to-br from-rose-500 to-fuchsia-600 p-[3px]">
-                      <span className="block rounded-full bg-zinc-50 p-[2px] dark:bg-black">
-                        <Avatar name={p?.name ?? "?"} url={p?.photoUrls[0]} className="h-14 w-14 text-lg" />
-                      </span>
+                    <span className="rounded-full border-2 border-brand p-[3px]">
+                      <Avatar name={p?.name ?? "?"} url={p?.photoUrls[0]} className="h-14 w-14 text-xl" />
                     </span>
                     <span className="w-full truncate text-xs font-medium text-black dark:text-zinc-50">
                       {p?.name ?? "New match"}
@@ -133,7 +131,7 @@ async function Inbox() {
                         </p>
                         <ShortTime
                           iso={chat.lastAt}
-                          className={`shrink-0 text-xs ${unread ? "font-semibold text-rose-600" : "text-zinc-500"}`}
+                          className={`shrink-0 text-xs ${unread ? "font-semibold text-brand" : "text-zinc-500"}`}
                         />
                       </div>
                       <p
@@ -146,8 +144,8 @@ async function Inbox() {
                       </p>
                     </div>
                     {unread && (
-                      <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-rose-500 px-1.5 text-xs font-semibold text-white">
-                        {chat.unread}
+                      <span className="h-3 w-3 shrink-0 rounded-full bg-brand">
+                        <span className="sr-only">{chat.unread} unread</span>
                       </span>
                     )}
                   </Link>

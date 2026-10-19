@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar";
 import { DayText } from "@/components/local-time";
+import { TwinBadge } from "@/components/twin-icon";
 import { requireUser } from "@/lib/auth";
 import { loadDecisionStates, loadRevealedProfiles } from "@/lib/decisions";
 import { signPhotoUrls } from "@/lib/photos";
@@ -130,16 +131,14 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
         <div className="flex flex-1 flex-col-reverse overflow-y-auto px-4 py-4">
           <div className="flex flex-col">
             {insight && (
-              <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 dark:border-violet-900 dark:bg-violet-950">
-                <p className="flex items-center gap-1.5 text-xs font-semibold text-violet-800 dark:text-violet-300">
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
-                    <path d="M12 2l2.2 6.3L20 10l-5.8 1.7L12 18l-2.2-6.3L4 10l5.8-1.7L12 2zm7 12l1 2.8 2.8 1-2.8 1-1 2.8-1-2.8-2.8-1 2.8-1 1-2.8z" />
-                  </svg>
-                  From your twins&apos; first chat
-                </p>
-                <p className="mt-1 text-sm text-violet-900 dark:text-violet-200">{insight}</p>
+              <div className="mb-4 flex items-start gap-3 rounded-2xl bg-violet-50 px-4 py-3 dark:bg-violet-950">
+              <TwinBadge onTint className="h-8 w-8" iconClassName="h-5 w-5" />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">From your twins&apos; first chat</p>
+                <p className="mt-0.5 text-sm text-violet-900 dark:text-violet-100">{insight}</p>
               </div>
-            )}
+            </div>
+          )}
             {error && <p className="text-sm text-red-600">{error.message}</p>}
             {empty ? (
               <div className="flex flex-col items-center py-10 text-center">

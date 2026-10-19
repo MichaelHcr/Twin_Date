@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AccountMenu } from "@/components/account-menu";
 import { ChatNotifier } from "@/components/chat-notifier";
+import { TwinIcon } from "@/components/twin-icon";
 import { NavLink } from "@/components/nav-link";
 import { loadChatSummaries } from "@/lib/chat";
 import { loadDecisionStates, NO_DECISION, wantsToMeet, type DecisionState } from "@/lib/decisions";
@@ -14,8 +15,9 @@ export function HeaderShell({ children }: { children?: React.ReactNode }) {
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-black/90">
       <div className="mx-auto flex h-16 w-full max-w-3xl items-center gap-2 px-4 font-sans">
-        <Link href="/" className="mr-2 text-lg font-semibold tracking-tight text-black dark:text-zinc-50">
-          Twin Date
+        <Link href="/" className="mr-2 flex items-center gap-1.5 text-lg font-semibold tracking-tight text-black dark:text-zinc-50">
+          <TwinIcon className="h-7 w-7 text-brand" />
+          <span className="hidden sm:inline">Twin Date</span>
         </Link>
         {children}
       </div>
