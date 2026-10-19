@@ -26,7 +26,9 @@ How to run the interview:
 - The user may answer in several short messages in a row, like texting. Treat them together as one reply.
 - Ask one question per message. Keep your messages short (1-3 sentences) and casual. Match the user's tone. Follow up on interesting answers before moving on, like a good first date would.
 - Cover every missing topic from get_profile_status, but weave them in naturally instead of reading a checklist. Also ask 2-3 open personality questions, for example a favorite story, what friends tease them about, or what a great first date looks like.
-- Whenever you learn something worth remembering, call save_profile_fact right away. Use the user's own framing. For locked topics, be precise. If an answer is ambiguous (for example "kids someday, maybe"), ask one clarifying question before saving. Never save your own guesses.
+- Whenever you learn something worth remembering, call save_profile_fact in the same turn, before you write your reply. Use the user's own framing. For locked topics, be precise. If an answer is ambiguous (for example "kids someday, maybe"), ask one clarifying question before saving. Never save your own guesses.
+- Saving is silent. Never tell the user you saved, noted, or recorded something ("got it, saved!"); just keep the conversation going. Only a save_profile_fact tool call actually saves anything, so never claim a save you didn't make.
+- Before saving a non-core topic, check the answered topics from get_profile_status. If one already covers the same subject (for example note:work when you learn more about their internship), reuse that exact topic name and pass the full, merged answer instead of starting a new topic.
 - If the user prefers not to answer a topic, save "Prefers not to say" for it and move on.
 - Aim for roughly 10-15 user replies in total. Once every locked topic has an answer and you have a good feel for how they talk, call finish_interview. After it succeeds, send a short, warm closing message that tells them their twin is being set up.
 
@@ -78,7 +80,7 @@ export async function runInterviewerTurn({
   const saveProfileFact = betaZodTool({
     name: "save_profile_fact",
     description:
-      "Save one fact about the user to their profile. For a core topic (kids, religion, smoking, relocation, dealbreakers, money, weekend, politics, interests), pass that key and the full, updated answer: it replaces any earlier answer, so merge in what was already known. For anything else worth remembering (a pet, a job field, a strong opinion), pass a short new topic name such as 'pets'.",
+      "Save one fact about the user to their profile. For a core topic (kids, religion, smoking, relocation, dealbreakers, money, weekend, politics, interests), pass that key and the full, updated answer: it replaces any earlier answer, so merge in what was already known. For anything else worth remembering (a pet, a job field, a strong opinion), pass a short topic name such as 'pets'. If get_profile_status already lists a note on the same subject, reuse its name (with or without the 'note:' prefix) and pass the merged answer, so one subject stays one topic.",
     inputSchema: z.object({
       topic: z.string().min(1).max(40).describe("A core topic key, or a short name for another topic"),
       answer: z.string().min(1).max(1000).describe("The fact, in the user's own framing"),
@@ -88,15 +90,23 @@ export async function runInterviewerTurn({
         .describe("Only for non-core topics: 'soft' if the twin may make a hedged guess about related questions, 'open' if it may improvise freely"),
     }),
     run: async ({ topic, answer, tier }) => {
-      const core = TOPICS.find((t) => t.key === topic);
-      const key = core
-        ? core.key
-        : `note:${topic.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 34)}`;
+      // Claude sometimes passes back a stored key like "note:anime" or "note_anime";
+      // strip that prefix so it maps to the same row instead of "note:note_anime".
+      const name = topic
+        .toLowerCase()
+        .replace(/^(note[:_])+/, "")
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 34);
+      const core = TOPICS.find((t) => t.key === topic || t.key === name);
+      const key = core ? core.key : `note:${name || "misc"}`;
       const { error } = await supabase.from("profile_answers").upsert(
         { user_id: userId, topic: key, answer, tier: core?.tier ?? tier ?? "open" },
         { onConflict: "user_id,topic" },
       );
-      return error ? `Error saving: ${error.message}` : `Saved ${key}.`;
+      return error
+        ? `Error saving: ${error.message}`
+        : `Saved ${key}. Don't mention saving to the user; just continue the conversation.`;
     },
   });
 

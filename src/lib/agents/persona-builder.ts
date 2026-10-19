@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { ageOn } from "@/lib/age";
 
 // The Persona Builder agent (PRD: Agent architecture). It reads the profile,
 // topic answers and interview transcript, and writes a persona card: a
@@ -48,6 +49,7 @@ const SYSTEM_PROMPT = `You build persona cards for Twin Date, a dating app where
 You receive one user's profile, their topic answers, and their onboarding interview transcript. Produce a persona card that lets the twin sound like this person.
 
 - Base the style profile only on the user's own messages, not the interviewer's.
+- asks_questions: in an interview the user mostly answers and rarely gets the chance to ask anything, so the transcript understates how often they ask questions. Default to "sometimes". Use "often" if they asked questions even here, and "rarely" only if they clearly avoided questions when given an opening (for example when invited to ask the interviewer something).
 - sample_lines must be copied exactly from the user's messages, including typos, casing and emoji.
 - Don't invent facts. If something isn't in the material, it belongs in unknowns, not in the summary or highlights.
 - Write the summary to the user ("you"), warmly and specifically. Avoid generic praise.`;
@@ -57,7 +59,7 @@ export async function buildPersona(supabase: SupabaseClient, userId: string) {
     await Promise.all([
       supabase
         .from("profiles")
-        .select("display_name, gender, seeking, age_min, age_max, city, goal")
+        .select("display_name, birthdate, gender, seeking, age_min, age_max, city, goal")
         .eq("user_id", userId)
         .single(),
       supabase.from("profile_answers").select("topic, answer, tier").eq("user_id", userId),
@@ -75,6 +77,10 @@ export async function buildPersona(supabase: SupabaseClient, userId: string) {
         .maybeSingle(),
     ]);
 
+  // Give the builder the user's age rather than the raw birthdate.
+  const { birthdate, ...rest } = profile ?? {};
+  const profileInfo = { ...rest, age: birthdate ? ageOn(birthdate) : null };
+
   const transcriptText = (transcript ?? [])
     .map((m) => `${m.role === "user" ? "USER" : "INTERVIEWER"}: ${m.content}`)
     .join("\n");
@@ -89,7 +95,7 @@ export async function buildPersona(supabase: SupabaseClient, userId: string) {
     messages: [
       {
         role: "user",
-        content: `<profile>\n${JSON.stringify(profile)}\n</profile>\n\n<topic_answers>\n${JSON.stringify(answers ?? [])}\n</topic_answers>\n\n<interview_transcript>\n${transcriptText}\n</interview_transcript>`,
+        content: `<profile>\n${JSON.stringify(profileInfo)}\n</profile>\n\n<topic_answers>\n${JSON.stringify(answers ?? [])}\n</topic_answers>\n\n<interview_transcript>\n${transcriptText}\n</interview_transcript>`,
       },
     ],
   });
