@@ -8,7 +8,7 @@ import { loadDecisionStates, loadRevealedProfiles } from "@/lib/decisions";
 import { signPhotoUrls } from "@/lib/photos";
 import { ensureChatTopics, type ChatTopic } from "@/lib/agents/chat-topics";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { BTN_PILL, CARD, COLUMN, PAGE, TWIN_NOTE } from "@/lib/ui";
+import { BTN_PILL, CARD, COLUMN, PAGE } from "@/lib/ui";
 import { ChatComposer } from "./composer";
 import { ChatMessages } from "./messages";
 import { ChatRoom } from "./room";
@@ -60,8 +60,16 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
 
   const otherId = conversation.user_a === user.id ? conversation.user_b : conversation.user_a;
   const admin = createAdminClient();
-  const [profiles, { data: messages, error }, { data: me }, { data: report }, { data: hearts }, { data: seenAt }, { data: decided }] =
-    await Promise.all([
+  const [
+    profiles,
+    { data: messages, error },
+    { data: me },
+    { data: report },
+    { data: hearts },
+    { data: seenAt },
+    { data: decided },
+    { data: twinMessages },
+  ] = await Promise.all([
     loadRevealedProfiles(admin, [otherId]),
     supabase
       .from("chat_messages")
@@ -77,6 +85,8 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
     // When the second yes came in, for "Matched …". Read with the admin client:
     // row-level security hides the other side's decision, and only its time is used.
     admin.from("decisions").select("created_at").eq("conversation_id", id).order("created_at", { ascending: false }).limit(1),
+    // The twins' first chat, shown folded above your own messages.
+    supabase.from("messages").select("id, speaker, content").eq("conversation_id", id).order("turn").order("id"),
   ]);
   const other = profiles.get(otherId);
   const name = other?.name ?? "Your match";
@@ -147,13 +157,21 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
         {/* column-reverse keeps the newest messages in view at the bottom */}
         <div className="flex flex-1 flex-col-reverse overflow-y-auto px-4 py-4">
           <div className="flex flex-col">
-            {insight && (
-              <p className={`${TWIN_NOTE} mb-4 flex gap-2`}>
-                <svg viewBox="0 0 24 24" className="mt-0.5 h-4 w-4 shrink-0" fill="currentColor" aria-hidden>
-                  <path d="M12 3l1.9 5.4L19 10l-5.1 1.6L12 17l-1.9-5.4L5 10l5.1-1.6L12 3zm6.5 10.5l.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9.9-2.4z" />
-                </svg>
-                <span>{insight}</span>
-              </p>
+            {(twinMessages ?? []).length > 0 && (
+              <TwinsFirstChat
+                insight={insight}
+                messages={(twinMessages ?? []) as { id: number; speaker: string; content: string }[]}
+                mySide={conversation.user_a === user.id ? "a" : "b"}
+              />
+            )}
+            {matchedAt && (
+              <div className="my-4 flex items-center gap-3 text-xs text-zinc-400" role="separator">
+                <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+                <span>
+                  You matched · <DaysAgo iso={matchedAt} />
+                </span>
+                <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+              </div>
             )}
             {error && <p className="text-sm text-red-600">{error.message}</p>}
             {empty ? (
@@ -164,7 +182,7 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
                 </div>
                 <p className="mt-4 text-xl font-semibold text-black dark:text-zinc-50">You and {name} matched</p>
                 <p className="mt-1 max-w-xs text-sm text-zinc-500">
-                  Your twins already covered the basics. Say hi, or pick a question from their report below.
+                  Your twins already covered the basics (open their chat above). Say hi, or pick a question below.
                 </p>
               </div>
             ) : (
@@ -189,5 +207,55 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
         <ChatComposer conversationId={id} starters={quiet ? [] : starters} quiet={quiet} />
       </div>
     </ChatRoom>
+  );
+}
+
+// The twins' first chat, folded above the real one: one line with their
+// takeaway, and the full chat when opened. Twins' messages are small, grey and
+// labeled, so they can't be mistaken for things you or they actually wrote.
+function TwinsFirstChat({
+  insight,
+  messages,
+  mySide,
+}: {
+  insight: string | null;
+  messages: { id: number; speaker: string; content: string }[];
+  mySide: "a" | "b";
+}) {
+  return (
+    <details className="group rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
+      <summary className="flex cursor-pointer list-none items-start gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden">
+        <span aria-hidden className="mt-0.5 text-sm text-zinc-400 transition group-open:rotate-90">
+          ›
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            Your twins&apos; first chat · {messages.length} messages
+          </span>
+          {insight && <span className="mt-0.5 block text-sm text-violet-700 dark:text-violet-300">✦ {insight}</span>}
+        </span>
+      </summary>
+      <div className="flex flex-col gap-1 border-t border-zinc-200 px-4 py-3 dark:border-zinc-800">
+        {messages.map((m, i) => {
+          const mine = m.speaker === mySide;
+          const startsRun = messages[i - 1]?.speaker !== m.speaker;
+          return (
+            <div key={m.id} className={`flex flex-col ${mine ? "items-end" : "items-start"} ${startsRun && i > 0 ? "mt-2" : ""}`}>
+              {startsRun && (
+                <span className="mb-0.5 text-[11px] font-medium text-zinc-400">{mine ? "Your twin" : "Their twin"}</span>
+              )}
+              <span
+                className={`max-w-[80%] rounded-2xl px-3 py-1.5 text-xs leading-snug text-zinc-600 dark:text-zinc-300 ${
+                  mine ? "bg-zinc-200 dark:bg-zinc-800" : "bg-white ring-1 ring-zinc-200 dark:bg-zinc-950 dark:ring-zinc-800"
+                }`}
+              >
+                {m.content}
+              </span>
+            </div>
+          );
+        })}
+        <p className="mt-2 text-center text-[11px] text-zinc-400">Written by your AI twins before you matched</p>
+      </div>
+    </details>
   );
 }
