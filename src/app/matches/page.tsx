@@ -4,28 +4,21 @@ import { requireUser } from "@/lib/auth";
 import { loadDecisionStates, NO_DECISION, wantsToMeet, type DecisionState } from "@/lib/decisions";
 import { END_REASON_LABELS, scoreColor, single } from "@/lib/matches";
 import { FindMatchButton } from "./find-button";
-import { BackLink } from "@/components/back-link";
+import { MatchDeck, needsAnswer } from "./match-deck";
 
 // The shortlist: every twin conversation the user is part of, best score first.
 export default function MatchesPage() {
   return (
     <main className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 font-sans dark:bg-black">
       <div className="flex w-full max-w-xl flex-col">
-        <BackLink href="/">Home</BackLink>
-        <h1 className="mt-5 text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
+        <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
           Your matches
         </h1>
         <p className="mt-1 text-zinc-600 dark:text-zinc-400">
           First chats your twin had, ranked by how promising they look.
         </p>
-        <div className="mt-6 flex flex-wrap items-start gap-3">
+        <div className="mt-6">
           <FindMatchButton />
-          <Link
-            href="/connections"
-            className="rounded-full border-2 border-black px-6 py-2.5 text-base font-semibold text-black hover:bg-zinc-100 dark:border-white dark:text-zinc-50 dark:hover:bg-zinc-900"
-          >
-            Your connections →
-          </Link>
         </div>
         <Suspense fallback={<p className="mt-8 text-zinc-500">Loading…</p>}>
           <MatchesLoader />
@@ -37,6 +30,8 @@ export default function MatchesPage() {
 
 type Row = {
   id: string;
+  user_a: string;
+  user_b: string;
   status: string;
   end_reason: string | null;
   turn_count: number;
@@ -59,12 +54,12 @@ function decisionBadge(state: DecisionState, hasReport: boolean) {
 }
 
 async function MatchesLoader() {
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   // Row-level security only returns conversations this user is part of.
   const [{ data, error }, states] = await Promise.all([
     supabase
       .from("conversations")
-      .select("id, status, end_reason, turn_count, created_at, reports(score, summary)")
+      .select("id, user_a, user_b, status, end_reason, turn_count, created_at, reports(score, summary)")
       .order("created_at", { ascending: false }),
     loadDecisionStates(supabase),
   ]);
@@ -73,7 +68,8 @@ async function MatchesLoader() {
   const rows = ((data ?? []) as Row[])
     .map((c) => {
       const report = single(c.reports);
-      return { ...c, report, badge: decisionBadge(states.get(c.id) ?? NO_DECISION, Boolean(report)) };
+      const state = states.get(c.id) ?? NO_DECISION;
+      return { ...c, report, state, badge: decisionBadge(state, Boolean(report)) };
     })
     .sort((x, y) => (y.report?.score ?? -1) - (x.report?.score ?? -1));
 
@@ -85,17 +81,16 @@ async function MatchesLoader() {
     );
   }
 
-  const waiting = rows.filter((c) => c.badge?.todo).length;
+  // The deck: requests waiting for an answer first, then the best scores.
+  const waiting = rows
+    .filter((c) => c.report && needsAnswer(c.state))
+    .sort((x, y) => Number(y.state.theyRequested) - Number(x.state.theyRequested));
 
   return (
     <>
-      {waiting > 0 && (
-        <p className="mt-8 flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
-          <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" aria-hidden />
-          {waiting === 1 ? "1 match is" : `${waiting} matches are`} waiting for your yes or pass. Open the ones marked below.
-        </p>
-      )}
-      <ul className={`${waiting > 0 ? "mt-4" : "mt-8"} flex flex-col gap-3`}>
+      <MatchDeck supabase={supabase} userId={user.id} waiting={waiting} />
+      <h2 className="mt-10 text-lg font-semibold text-black dark:text-zinc-50">All matches</h2>
+      <ul className="mt-3 flex flex-col gap-3">
         {rows.map((c, i) => (
           <li key={c.id}>
             <Link

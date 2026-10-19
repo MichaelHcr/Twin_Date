@@ -42,3 +42,16 @@ export function ShortTime({ iso, className }: { iso: string; className?: string 
     </time>
   );
 }
+
+// A day for a sentence: "today", "yesterday", "Monday" or "Oct 12".
+export function DayText({ iso, prefix = "" }: { iso: string; prefix?: string }) {
+  const isClient = useIsClient();
+  if (!isClient) return null;
+  const day = formatDay(new Date(iso));
+  return (
+    <time dateTime={iso}>
+      {prefix}
+      {day === "Today" || day === "Yesterday" ? day.toLowerCase() : day}
+    </time>
+  );
+}

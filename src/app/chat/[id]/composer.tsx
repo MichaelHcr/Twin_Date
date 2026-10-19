@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { sendChatMessage } from "./actions";
+import { useChatRoom } from "./room";
 
 // The message bar at the bottom of the chat: a pill-shaped box that grows with
 // the text, and a round send button. Enter sends; Shift+Enter adds a new line.
@@ -11,6 +12,7 @@ export function ChatComposer({ conversationId, starters = [] }: { conversationId
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const box = useRef<HTMLTextAreaElement>(null);
+  const { notifyTyping } = useChatRoom();
 
   function resize() {
     const el = box.current;
@@ -62,6 +64,7 @@ export function ChatComposer({ conversationId, starters = [] }: { conversationId
           onChange={(e) => {
             setText(e.target.value);
             resize();
+            if (e.target.value.trim()) notifyTyping();
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {

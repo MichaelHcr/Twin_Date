@@ -77,15 +77,15 @@ export async function SiteHeader() {
     <HeaderShell>
       {profile?.onboarding_complete && (
         <nav className="flex items-center gap-1">
-          <NavLink href="/matches" count={yourCall} urgent>
-            Matches
-          </NavLink>
           <NavLink
             href="/connections"
             count={requests + unreadChats || connected}
             urgent={requests + unreadChats > 0}
           >
             Connections
+          </NavLink>
+          <NavLink href="/matches" count={yourCall} urgent>
+            Matches
           </NavLink>
         </nav>
       )}

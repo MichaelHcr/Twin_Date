@@ -46,3 +46,30 @@ export async function markChatRead(conversationId: string) {
   revalidatePath("/", "layout");
   return true;
 }
+
+// Adds or removes the user's heart on a message (migration 0009). Row-level
+// security only allows it in a chat they're connected in.
+export async function toggleHeart(conversationId: string, messageId: number) {
+  const parsed = z.object({ conversationId: z.uuid(), messageId: z.number().int().positive() }).safeParse({
+    conversationId,
+    messageId,
+  });
+  if (!parsed.success) return { error: "That message can't be hearted." };
+  const { supabase, user } = await requireUser();
+
+  const { data: existing } = await supabase
+    .from("chat_reactions")
+    .select("message_id")
+    .eq("message_id", messageId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const { error } = existing
+    ? await supabase.from("chat_reactions").delete().eq("message_id", messageId).eq("user_id", user.id)
+    : await supabase
+        .from("chat_reactions")
+        .insert({ message_id: messageId, user_id: user.id, conversation_id: conversationId });
+  if (error) return { error: `Couldn't save your heart: ${error.message}` };
+
+  revalidatePath("/", "layout");
+  return null;
+}
