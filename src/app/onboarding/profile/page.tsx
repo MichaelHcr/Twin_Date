@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { requireUser } from "@/lib/auth";
 import { TOPICS } from "@/lib/profile-topics";
-import { OwnPhotos } from "@/app/photos/own-photos";
+import { OwnPhotos } from "@/components/photos/own-photos";
 import { ProfileForm } from "./profile-form";
 
 export default function ProfilePage() {

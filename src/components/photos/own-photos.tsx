@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { signPhotoUrls } from "@/lib/photos";
 import { PhotoManager } from "./photo-manager";
 
-// The signed-in user's photo manager, used on /photos and on the profile page.
+// The signed-in user's photo manager, shown on the profile page.
 // Wrap it in <Suspense>: it reads the session and the database.
 export async function OwnPhotos() {
   const { supabase, user } = await requireUser();
