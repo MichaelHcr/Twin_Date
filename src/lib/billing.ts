@@ -63,7 +63,8 @@ const PAID_STATUSES: Stripe.Subscription.Status[] = ["active", "trialing"];
 
 // Reads a subscription's current state from Stripe and writes the user's tier.
 // Always fetching fresh state makes it safe to call from any webhook event, in
-// any order, and again from the checkout success page.
+// any order, and again from the checkout success page and the plans page.
+// Returns when a cancelled-but-still-paid subscription ends, or null.
 export async function syncSubscription(stripe: Stripe, admin: SupabaseClient, subscriptionId: string) {
   const sub = await stripe.subscriptions.retrieve(subscriptionId);
   const userId = sub.metadata.user_id;
@@ -89,4 +90,8 @@ export async function syncSubscription(stripe: Stripe, admin: SupabaseClient, su
         .eq("user_id", userId)
         .eq("stripe_subscription_id", sub.id);
   if (error) throw new Error(`Couldn't save subscription for ${userId}: ${error.message}`);
+
+  // Cancelling in the billing portal keeps the plan until the period ends.
+  const endsAt = sub.cancel_at ?? (sub.cancel_at_period_end ? periodEnd : null);
+  return { cancelsAt: paid && endsAt ? new Date(endsAt * 1000).toISOString() : null };
 }

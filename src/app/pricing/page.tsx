@@ -60,6 +60,18 @@ async function PlansLoader({ searchParams }: Pick<PageProps<"/pricing">, "search
     notice = { ok: false, text: "Checkout was canceled. You haven't been charged." };
   }
 
+  // Check the plan on file against Stripe, so a cancellation shows up here even
+  // if its webhook hasn't arrived (or can't, in local development).
+  let cancelsAt: string | null = null;
+  const onFile = await loadSubscription(supabase, user.id);
+  if (onFile.stripe_subscription_id) {
+    try {
+      ({ cancelsAt } = await syncSubscription(getStripe(), createAdminClient(), onFile.stripe_subscription_id));
+    } catch (error) {
+      console.error("Checking the subscription with Stripe failed:", error);
+    }
+  }
+
   const [subscription, used] = await Promise.all([
     loadSubscription(supabase, user.id),
     conversationsThisWeek(supabase, user.id),
@@ -84,8 +96,10 @@ async function PlansLoader({ searchParams }: Pick<PageProps<"/pricing">, "search
         You&apos;re on <span className="font-medium text-black dark:text-zinc-50">{PLANS[current].name}</span>:
         {" "}
         {used} of {PLANS[current].perWeek} twin chats used in the last 7 days.
-        {subscription.period_end && (
-          <> Renews on {new Date(subscription.period_end).toLocaleDateString("en-US", { dateStyle: "medium" })}.</>
+        {cancelsAt ? (
+          <> Cancelled: your plan ends on {formatDate(cancelsAt)}, then you&apos;re back on Free.</>
+        ) : (
+          subscription.period_end && <> Renews on {formatDate(subscription.period_end)}.</>
         )}
       </p>
 
@@ -130,4 +144,8 @@ async function PlansLoader({ searchParams }: Pick<PageProps<"/pricing">, "search
       </p>
     </>
   );
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", { dateStyle: "medium" });
 }
