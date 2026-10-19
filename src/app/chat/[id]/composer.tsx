@@ -6,9 +6,20 @@ import { useChatRoom } from "./room";
 
 // The message bar at the bottom of the chat: a pill-shaped box that grows with
 // the text, and a round send button. Enter sends; Shift+Enter adds a new line.
-// Before the first message, the report's "questions to ask" show as starters.
-export function ChatComposer({ conversationId, starters = [] }: { conversationId: string; starters?: string[] }) {
+// While the chat is young, the report's "questions to ask" show as starters.
+// When it has gone quiet for a couple of days, one of them is offered instead.
+export function ChatComposer({
+  conversationId,
+  starters = [],
+  quiet = null,
+}: {
+  conversationId: string;
+  starters?: string[];
+  quiet?: { days: number; topics: string[] } | null;
+}) {
   const [text, setText] = useState("");
+  const [topic, setTopic] = useState(0);
+  const [dismissed, setDismissed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const box = useRef<HTMLTextAreaElement>(null);
@@ -36,8 +47,53 @@ export function ChatComposer({ conversationId, starters = [] }: { conversationId
     });
   }
 
+  function fill(value: string) {
+    setText(value);
+    requestAnimationFrame(() => {
+      resize();
+      box.current?.focus();
+    });
+  }
+
+  const showQuiet = quiet && quiet.topics.length > 0 && !dismissed;
+  const current = showQuiet ? quiet.topics[topic % quiet.topics.length] : null;
+
   return (
     <div className="border-t border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950">
+      {current && (
+        <div className="mb-3 rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          <div className="flex items-start justify-between gap-2">
+            <p className="font-semibold">It&apos;s been {quiet!.days} days. Something to talk about?</p>
+            <button
+              onClick={() => setDismissed(true)}
+              aria-label="Dismiss"
+              className="-mr-1 -mt-0.5 rounded-full px-1.5 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900"
+            >
+              ×
+            </button>
+          </div>
+          <p className="mt-0.5">Your twins wondered: “{current}”</p>
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={() => {
+                fill(current);
+                setDismissed(true);
+              }}
+              className="rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-white dark:text-black"
+            >
+              Ask this
+            </button>
+            {quiet!.topics.length > 1 && (
+              <button
+                onClick={() => setTopic((t) => t + 1)}
+                className="rounded-full border border-amber-300 px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-900"
+              >
+                Another one
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       {starters.length > 0 && (
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
           {starters.map((s) => (

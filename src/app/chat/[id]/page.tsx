@@ -12,6 +12,15 @@ import { ChatComposer } from "./composer";
 import { ChatMessages } from "./messages";
 import { ChatRoom } from "./room";
 
+// After this many days without a message, the chat offers a topic from the
+// twins' report.
+const QUIET_AFTER_DAYS = 2;
+
+// Whole days since a time. Pages here render per request, so "now" is the request time.
+function daysSince(iso: string | null) {
+  return iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000) : null;
+}
+
 // Person-to-person chat with a connected match (both said yes).
 export default function ChatPage({ params }: PageProps<"/chat/[id]">) {
   return (
@@ -73,7 +82,11 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
   const [myPhoto = null] = await signPhotoUrls(supabase, ((me?.photos ?? []) as string[]).slice(0, 1));
   const empty = (messages ?? []).length === 0;
   // Conversation starters from the report, while the chat is still young.
-  const starters = (messages ?? []).length < 6 ? ((report?.questions_to_ask ?? []) as string[]).slice(0, 4) : [];
+  const questions = (report?.questions_to_ask ?? []) as string[];
+  const starters = (messages ?? []).length < 6 ? questions.slice(0, 4) : [];
+  // Gone quiet: nobody has written for QUIET_AFTER_DAYS, so offer a topic.
+  const quietDays = daysSince((messages ?? []).at(-1)?.created_at ?? null);
+  const quiet = quietDays !== null && quietDays >= QUIET_AFTER_DAYS ? { days: quietDays, topics: questions } : null;
   // The twins' take, shown at the top of the chat: the report's first sentence.
   // The Judge writes "Member A / Member B"; here that's "you" and their name.
   const mySide = conversation.user_a === user.id ? "A" : "B";
@@ -159,7 +172,7 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
           </div>
         </div>
 
-        <ChatComposer conversationId={id} starters={starters} />
+        <ChatComposer conversationId={id} starters={quiet ? [] : starters} quiet={quiet} />
       </div>
     </ChatRoom>
   );
