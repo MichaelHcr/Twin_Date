@@ -1,10 +1,11 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
-import { ShortTime } from "@/components/local-time";
+import { KnownFor, ShortTime } from "@/components/local-time";
 import { requireUser } from "@/lib/auth";
 import { loadChatSummaries } from "@/lib/chat";
 import { loadDecisionStates, loadRevealedProfiles, NO_DECISION, wantsToMeet } from "@/lib/decisions";
+import { single } from "@/lib/matches";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BTN_PRIMARY, CARD, COLUMN, DOT_UNREAD, LABEL, PAGE, STORY_RING, TITLE } from "@/lib/ui";
 
@@ -22,29 +23,90 @@ export default function ConnectionsPage() {
   );
 }
 
-type Row = { id: string; user_a: string; user_b: string };
+type Row = {
+  id: string;
+  user_a: string;
+  user_b: string;
+  reports: { score: number } | { score: number }[] | null;
+};
+
+const DAY_MS = 86_400_000;
+
+// Pages here render per request (they read the session), so "now" is the request time.
+const daysAgoIso = (days: number) => new Date(Date.now() - days * DAY_MS).toISOString();
+
+// Days in a row, ending today or yesterday, on which both people sent at least
+// one message (by UTC day). Like a Snapchat streak; shown from 2 days.
+function streakDays(messages: { sender_id: string; created_at: string }[], userId: string) {
+  const days = new Map<number, Set<"me" | "them">>();
+  for (const m of messages) {
+    const day = Math.floor(new Date(m.created_at).getTime() / DAY_MS);
+    if (!days.has(day)) days.set(day, new Set());
+    days.get(day)!.add(m.sender_id === userId ? "me" : "them");
+  }
+  const both = (d: number) => days.get(d)?.size === 2;
+  let day = Math.floor(Date.now() / DAY_MS);
+  if (!both(day)) day -= 1;
+  let streak = 0;
+  while (both(day)) {
+    streak++;
+    day -= 1;
+  }
+  return streak;
+}
 
 async function Inbox() {
   const { supabase, user } = await requireUser();
   // Row-level security only returns conversations this user is part of.
   const [{ data, error }, states, chats] = await Promise.all([
-    supabase.from("conversations").select("id, user_a, user_b").eq("status", "ended"),
+    supabase.from("conversations").select("id, user_a, user_b, reports(score)").eq("status", "ended"),
     loadDecisionStates(supabase),
     loadChatSummaries(supabase),
   ]);
   if (error) return <p className="text-red-600">{error.message}</p>;
 
-  const connected: { id: string; otherId: string }[] = [];
+  const connected: { id: string; otherId: string; score: number | null }[] = [];
   const requests: string[] = [];
   for (const c of (data ?? []) as Row[]) {
     const state = states.get(c.id) ?? NO_DECISION;
-    if (state.connected) connected.push({ id: c.id, otherId: c.user_a === user.id ? c.user_b : c.user_a });
+    if (state.connected) {
+      connected.push({ id: c.id, otherId: c.user_a === user.id ? c.user_b : c.user_a, score: single(c.reports)?.score ?? null });
+    }
     else if (state.theyRequested && !wantsToMeet(state.mine)) requests.push(c.id);
   }
-  const profiles =
+  const ids = connected.map((c) => c.id);
+  const admin = createAdminClient();
+  const [profiles, { data: decided }, { data: recent }] =
     connected.length > 0
-      ? await loadRevealedProfiles(createAdminClient(), connected.map((c) => c.otherId))
-      : new Map();
+      ? await Promise.all([
+          loadRevealedProfiles(admin, connected.map((c) => c.otherId)),
+          // When the second yes came in. Row-level security hides the other side's
+          // decision, so read it with the admin client; only the time is used.
+          admin.from("decisions").select("conversation_id, created_at").in("conversation_id", ids),
+          // The last month of messages, for streaks.
+          supabase
+            .from("chat_messages")
+            .select("conversation_id, sender_id, created_at")
+            .in("conversation_id", ids)
+            .gte("created_at", daysAgoIso(31)),
+        ])
+      : [new Map(), { data: [] }, { data: [] }];
+  const matchedAt = new Map<string, string>();
+  for (const d of (decided ?? []) as { conversation_id: string; created_at: string }[]) {
+    const prev = matchedAt.get(d.conversation_id);
+    if (!prev || d.created_at > prev) matchedAt.set(d.conversation_id, d.created_at);
+  }
+  const streaks = new Map(
+    ids.map((id) => [
+      id,
+      streakDays(
+        ((recent ?? []) as { conversation_id: string; sender_id: string; created_at: string }[]).filter(
+          (m) => m.conversation_id === id,
+        ),
+        user.id,
+      ),
+    ]),
+  );
 
   // New matches: connected, but nobody has written yet. The rest are chats.
   const fresh = connected.filter((c) => !chats.has(c.id));
@@ -115,6 +177,9 @@ async function Inbox() {
                 const p = profiles.get(c.otherId);
                 const chat = chats.get(c.id)!;
                 const unread = chat.unread > 0;
+                const yourTurn = !chat.lastFromMe && !unread;
+                const streak = streaks.get(c.id) ?? 0;
+                const since = matchedAt.get(c.id);
                 return (
                   <li key={c.id}>
                     <Link
@@ -144,7 +209,21 @@ async function Inbox() {
                               <span className="sr-only">{chat.unread} unread</span>
                             </span>
                           )}
+                          {yourTurn && !p?.isSeed && (
+                            <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-semibold text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                              Your turn
+                            </span>
+                          )}
                         </div>
+                        <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-zinc-400">
+                          {since && <KnownFor since={since} />}
+                          {c.score !== null && <span>· {c.score}% match</span>}
+                          {streak >= 2 && (
+                            <span className="font-medium text-orange-500" title={`You've both messaged ${streak} days in a row`}>
+                              · 🔥 {streak}
+                            </span>
+                          )}
+                        </p>
                       </div>
                     </Link>
                   </li>

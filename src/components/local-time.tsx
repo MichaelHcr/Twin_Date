@@ -60,3 +60,19 @@ export function DaysAgo({ iso, prefix = "" }: { iso: string; prefix?: string }) 
     </time>
   );
 }
+
+// How long two people have been connected, in the viewer's calendar days:
+// "Matched today", "Known 1 day", "Known 12 days".
+export function KnownFor({ since }: { since: string }) {
+  const isClient = useIsClient();
+  if (!isClient) return null;
+  const then = new Date(since);
+  const now = new Date();
+  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((startOf(now) - startOf(then)) / 86_400_000);
+  return (
+    <time dateTime={since} title={`Matched ${then.toLocaleDateString()}`}>
+      {days <= 0 ? "Matched today" : `Known ${days} ${days === 1 ? "day" : "days"}`}
+    </time>
+  );
+}
