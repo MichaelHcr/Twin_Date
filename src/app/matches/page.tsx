@@ -19,10 +19,15 @@ export default function MatchesPage() {
         <p className="mt-1 text-zinc-600 dark:text-zinc-400">
           First chats your twin had, ranked by how promising they look.
         </p>
-        <Link href="/connections" className="mt-2 self-start text-sm font-medium text-zinc-700 hover:underline dark:text-zinc-300">
-          Your connections →
-        </Link>
-        <FindMatchButton />
+        <div className="mt-6 flex flex-wrap items-start gap-3">
+          <FindMatchButton />
+          <Link
+            href="/connections"
+            className="rounded-full border-2 border-black px-6 py-2.5 text-base font-semibold text-black hover:bg-zinc-100 dark:border-white dark:text-zinc-50 dark:hover:bg-zinc-900"
+          >
+            Your connections →
+          </Link>
+        </div>
         <Suspense fallback={<p className="mt-8 text-zinc-500">Loading…</p>}>
           <MatchesLoader />
         </Suspense>

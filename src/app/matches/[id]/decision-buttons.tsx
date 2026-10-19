@@ -38,8 +38,8 @@ export function DecisionButtons({
             disabled={pending}
             className={
               o.primary
-                ? "rounded-full bg-black px-5 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
-                : "rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-black disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-50"
+                ? "rounded-full bg-black px-6 py-2.5 text-base font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-black"
+                : "rounded-full border border-zinc-300 px-6 py-2.5 text-base font-medium text-black disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-50"
             }
           >
             {o.label}

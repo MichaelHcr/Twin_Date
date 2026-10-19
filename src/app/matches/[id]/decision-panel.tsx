@@ -158,7 +158,7 @@ function RevealCard({ conversationId, profile }: { conversationId: string; profi
       )}
       <Link
         href={`/chat/${conversationId}`}
-        className="mt-4 inline-block rounded-full bg-black px-5 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+        className="mt-4 inline-block rounded-full bg-black px-6 py-3 text-base font-semibold text-white dark:bg-white dark:text-black"
       >
         Open chat
       </Link>

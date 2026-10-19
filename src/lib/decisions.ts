@@ -43,7 +43,7 @@ export type RevealedProfile = {
   photoUrls: string[];
 };
 
-function ageOf(birthdate: string | null) {
+export function ageOf(birthdate: string | null) {
   if (!birthdate) return null;
   const b = new Date(birthdate);
   const now = new Date();
