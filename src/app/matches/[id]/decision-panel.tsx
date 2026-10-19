@@ -4,12 +4,11 @@ import { cache } from "react";
 import { Avatar } from "@/components/avatar";
 import { loadDecisionStates, loadRevealedProfiles, NO_DECISION, wantsToMeet, type RevealedProfile } from "@/lib/decisions";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { BTN_PRIMARY, CARD, DOT } from "@/lib/ui";
 import { DecisionButtons, type DecisionOption } from "./decision-buttons";
 
 type Conversation = { id: string; user_a: string; user_b: string; end_reason: string | null };
 
-const CARD =
-  "rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950";
 
 // Both parts of the page read the same state; cache() makes it one query per request.
 const loadState = cache(async (supabase: SupabaseClient, conversationId: string) => {
@@ -44,7 +43,7 @@ export async function DecisionStatus({
   if (needsAnswer(state)) return null; // DecisionBar asks at the bottom of the screen.
 
   const say = (title: string, body: string, options: DecisionOption[]) => (
-    <section className={CARD}>
+    <section className={`${CARD} p-6`}>
       <h2 className="font-semibold text-black dark:text-zinc-50">{title}</h2>
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{body}</p>
       <DecisionButtons conversationId={conversation.id} options={options} />
@@ -110,9 +109,9 @@ export async function DecisionBar({
   }
 
   return (
-    <section className="sticky bottom-4 z-10 rounded-2xl border-2 border-black bg-white/95 p-4 shadow-xl backdrop-blur dark:border-white dark:bg-zinc-950/95">
+    <section className={`${CARD} sticky bottom-4 z-10 p-4 shadow-lg`}>
       <p className="flex items-center gap-2 font-semibold text-black dark:text-zinc-50">
-        <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden />
+        <span className={DOT} aria-hidden />
         {title}
       </p>
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{body}</p>
@@ -123,10 +122,10 @@ export async function DecisionBar({
 
 function RevealCard({ conversationId, profile }: { conversationId: string; profile: RevealedProfile }) {
   return (
-    <section className="rounded-2xl border border-green-200 bg-green-50 p-6 dark:border-green-900 dark:bg-green-950">
-      <p className="text-sm font-medium text-green-700 dark:text-green-400">You both said yes</p>
+    <section className="rounded-2xl border border-pink-200 bg-brand-soft p-6 dark:border-pink-900 dark:bg-pink-950">
+      <p className="text-sm font-semibold text-brand-ink dark:text-pink-200">You both said yes</p>
       <div className="mt-3 flex items-center gap-4">
-        <Avatar name={profile.name} url={profile.photoUrls[0]} className="h-16 w-16 text-xl" />
+        <Avatar name={profile.name} url={profile.photoUrls[0]} className="h-16 w-16 border-2 border-brand text-xl" />
         <div>
           <p className="text-xl font-semibold text-black dark:text-zinc-50">
             {profile.name}
@@ -152,7 +151,7 @@ function RevealCard({ conversationId, profile }: { conversationId: string; profi
       )}
       <Link
         href={`/chat/${conversationId}`}
-        className="mt-4 inline-block rounded-full bg-black px-6 py-3 text-base font-semibold text-white dark:bg-white dark:text-black"
+        className={`${BTN_PRIMARY} mt-4`}
       >
         Open chat
       </Link>

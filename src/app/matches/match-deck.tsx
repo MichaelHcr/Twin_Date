@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ageOf, wantsToMeet, type Decision, type DecisionState } from "@/lib/decisions";
-import { TwinBadge } from "@/components/twin-icon";
-import { END_REASON_LABELS } from "@/lib/matches";
-import { GOALS } from "@/lib/profile-topics";
+import { GOALS, TOPICS } from "@/lib/profile-topics";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { CARD, CHIP_ALIGNED, CHIP_ASK, CHIP_FLAG, PANEL, TITLE, TWIN_NOTE } from "@/lib/ui";
+import { FindMatchButton } from "./find-button";
 import { DeckActions } from "./deck-actions";
 
 export type DeckItem = {
@@ -21,8 +21,12 @@ type Evidence = { speaker: "a" | "b"; quote: string; why: string };
 export const needsAnswer = (s: DecisionState) =>
   !s.connected && !wantsToMeet(s.mine) && (s.mine === null || s.theyRequested);
 
-// One match at a time, like a dating app: the report up front, Pass / Yes below.
-// Identities stay hidden; the card shows only their age and what the twins found.
+// Topics with set answers, where the same answer on both sides is worth a tag.
+const ALIGNABLE = ["kids", "smoking", "relocation"];
+const SHORT_GOALS: Record<string, string> = { long_term: "long-term", short_term: "short-term", open: "open to either" };
+
+// One match at a time, like a dating app: the twins' report up front, then
+// Pass / Read / Yes. Names and photos stay hidden until both say yes.
 export async function MatchDeck({
   supabase,
   userId,
@@ -33,27 +37,58 @@ export async function MatchDeck({
   waiting: DeckItem[];
 }) {
   const top = waiting[0];
-  if (!top) return null;
+
+  const header = (
+    <div className="flex items-baseline justify-between px-5 pb-3 pt-5">
+      <h1 className={TITLE}>Matches</h1>
+      {top && <span className="text-sm text-zinc-500">1 of {waiting.length} waiting</span>}
+    </div>
+  );
+
+  if (!top) {
+    return (
+      <section className={CARD}>
+        {header}
+        <div className="px-5 pb-6 text-center">
+          <p className="font-semibold text-black dark:text-zinc-50">You&apos;re all caught up</p>
+          <p className="mt-1 text-sm text-zinc-500">Send your twin on a first chat to meet someone new.</p>
+          <div className="mt-5 flex justify-center">
+            <FindMatchButton />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   const mySide = top.user_a === userId ? "a" : "b";
   const otherId = mySide === "a" ? top.user_b : top.user_a;
+  const admin = createAdminClient();
 
-  const [{ data: report }, { data: other }] = await Promise.all([
+  const [{ data: report }, { data: other }, { data: answers }] = await Promise.all([
     supabase
       .from("reports")
-      .select("score, summary, evidence_json, red_flags, questions_to_ask")
+      .select("summary, score, evidence_json, red_flags, questions_to_ask")
       .eq("conversation_id", top.id)
       .single(),
     // Age, city and goal only: names and photos stay hidden until both say yes.
-    createAdminClient().from("profiles").select("birthdate, city, goal").eq("user_id", otherId).single(),
+    admin.from("profiles").select("birthdate, city, goal").eq("user_id", otherId).single(),
+    // Only compared here to say "aligned"; the answers themselves aren't shown.
+    admin.from("profile_answers").select("user_id, topic, answer").in("user_id", [userId, otherId]).in("topic", ALIGNABLE),
   ]);
   if (!report) return null;
 
-  const theirQuotes = ((report.evidence_json ?? []) as Evidence[]).filter((e) => e.speaker !== mySide).slice(0, 2);
+  const answerOf = (uid: string, topic: string) =>
+    (answers ?? []).find((a) => a.user_id === uid && a.topic === topic)?.answer?.trim().toLowerCase();
+  const aligned = ALIGNABLE.filter((t) => {
+    const mine = answerOf(userId, t);
+    return mine && mine !== "not sure yet" && mine === answerOf(otherId, t);
+  }).map((t) => `${TOPICS.find((x) => x.key === t)?.label ?? t}: aligned`);
+
+  const quote = ((report.evidence_json ?? []) as Evidence[]).find((e) => e.speaker !== mySide);
   const redFlags = (report.red_flags ?? []) as string[];
-  const toAsk = ((report.questions_to_ask ?? []) as string[]).slice(0, 2);
+  const toAsk = ((report.questions_to_ask ?? []) as string[]).slice(0, 1);
   const age = ageOf(other?.birthdate ?? null);
-  const goal = GOALS.find((g) => g.value === other?.goal)?.label ?? null;
-  const alias = `Member ${mySide === "a" ? "B" : "A"}`;
+  const goal = other?.goal ? (SHORT_GOALS[other.goal] ?? GOALS.find((g) => g.value === other.goal)?.label) : null;
 
   let yes: Decision = "yes";
   let yesLabel = "Yes";
@@ -68,86 +103,55 @@ export async function MatchDeck({
   }
 
   return (
-    <section className="mt-8">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-lg font-semibold text-black dark:text-zinc-50">Waiting for you</h2>
-        <span className="text-sm text-zinc-500">
-          {waiting.length === 1 ? "Last one" : `1 of ${waiting.length}`}
-        </span>
-      </div>
-
-      <div className="relative mt-3">
-        {/* The next cards peek out underneath, like a deck. */}
-        {waiting.length > 1 && (
-          <div className="absolute inset-x-4 -bottom-2 h-full rounded-3xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950" />
-        )}
-        {waiting.length > 2 && (
-          <div className="absolute inset-x-8 -bottom-4 h-full rounded-3xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950" />
-        )}
-
-        <article className="relative rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5 dark:border-zinc-800 dark:bg-zinc-950">
-          {note && (
-            <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-              {note}
-            </p>
-          )}
-          <div className="rounded-2xl bg-zinc-50 p-5 dark:bg-zinc-900">
+    <section className={CARD}>
+      {header}
+      <div className="px-5">
+        {note && <p className={`${TWIN_NOTE} mb-3`}>{note}</p>}
+        <div className={`${PANEL} p-5`}>
           <div className="flex items-center gap-4">
-            <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-[3px] border-brand bg-white text-3xl font-semibold text-brand-ink dark:bg-zinc-950 dark:text-pink-300">
+            <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-[3px] border-brand text-3xl font-medium text-brand-ink dark:text-pink-300">
               {report.score}
             </span>
             <div className="min-w-0">
               <p className="text-xl font-semibold text-black dark:text-zinc-50">
-                {alias}
+                Member {mySide === "a" ? "B" : "A"}
                 {age !== null && `, ${age}`}
               </p>
-              <p className="text-sm text-zinc-500">{[other?.city, goal].filter(Boolean).join(" · ")}</p>
-              <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-violet-700 dark:text-violet-300">
-                <TwinBadge className="h-5 w-5" iconClassName="h-3.5 w-3.5" />
-                {top.end_reason ? END_REASON_LABELS[top.end_reason] : "Your twins had a first chat"}
-              </p>
+              <p className="text-zinc-500">{[other?.city, goal].filter(Boolean).join(" · ")}</p>
             </div>
           </div>
 
-          <p className="mt-4 leading-7 text-zinc-800 dark:text-zinc-200">{report.summary}</p>
+          <p className="mt-4 leading-7 text-zinc-700 dark:text-zinc-300">{report.summary}</p>
 
-          {theirQuotes.length > 0 && (
-            <ul className="mt-3 flex flex-col gap-2">
-              {theirQuotes.map((q) => (
-                <li key={q.quote} className="border-l-2 border-pink-300 pl-3 text-sm text-zinc-700 dark:border-pink-800 dark:text-zinc-300">
-                  “{q.quote}”
-                </li>
-              ))}
-            </ul>
+          {quote && (
+            <p className="mt-3 border-l-2 border-pink-300 pl-3 text-zinc-700 dark:border-pink-800 dark:text-zinc-300">
+              “{quote.quote}”
+            </p>
           )}
 
-          {(redFlags.length > 0 || toAsk.length > 0) && (
+          {(aligned.length > 0 || redFlags.length > 0 || toAsk.length > 0) && (
             <div className="mt-4 flex flex-wrap gap-2">
+              {aligned.map((a) => (
+                <span key={a} className={CHIP_ALIGNED}>
+                  {a}
+                </span>
+              ))}
               {redFlags.map((f) => (
-                <span key={f} className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-800 dark:bg-red-950 dark:text-red-300">
+                <span key={f} className={CHIP_FLAG}>
                   {f}
                 </span>
               ))}
               {toAsk.map((q) => (
-                <span key={q} className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                <span key={q} className={`${CHIP_ASK} max-w-full truncate`}>
                   Ask: {q}
                 </span>
               ))}
             </div>
           )}
-          </div>
+        </div>
 
-          <DeckActions
-            conversationId={top.id}
-            yes={yes}
-            yesLabel={yesLabel}
-            canPass={top.state.mine !== "pass"}
-          />
-        </article>
+        <DeckActions conversationId={top.id} yes={yes} yesLabel={yesLabel} canPass={top.state.mine !== "pass"} />
       </div>
-      <p className="mt-6 text-center text-xs text-zinc-500">
-        Your answer stays private. If you both say yes, you&apos;ll see each other&apos;s name and photos.
-      </p>
     </section>
   );
 }

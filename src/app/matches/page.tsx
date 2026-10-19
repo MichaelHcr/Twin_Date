@@ -2,25 +2,18 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { loadDecisionStates, NO_DECISION, wantsToMeet, type DecisionState } from "@/lib/decisions";
-import { END_REASON_LABELS, scoreColor, single } from "@/lib/matches";
+import { END_REASON_LABELS, single } from "@/lib/matches";
+import { CARD, CHIP_NEUTRAL, CHIP_YOU, COLUMN, PAGE, TITLE } from "@/lib/ui";
 import { FindMatchButton } from "./find-button";
 import { MatchDeck, needsAnswer } from "./match-deck";
 
-// The shortlist: every twin conversation the user is part of, best score first.
+// Matches: the deck of reports waiting for a yes or pass, then every first chat
+// the twin has had, best score first.
 export default function MatchesPage() {
   return (
-    <main className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 font-sans dark:bg-black">
-      <div className="flex w-full max-w-xl flex-col">
-        <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-          Your matches
-        </h1>
-        <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-          First chats your twin had, ranked by how promising they look.
-        </p>
-        <div className="mt-6">
-          <FindMatchButton />
-        </div>
-        <Suspense fallback={<p className="mt-8 text-zinc-500">Loading…</p>}>
+    <main className={PAGE}>
+      <div className={COLUMN}>
+        <Suspense fallback={<div className={`${CARD} h-96`} />}>
           <MatchesLoader />
         </Suspense>
       </div>
@@ -39,18 +32,15 @@ type Row = {
   reports: { score: number; summary: string } | { score: number; summary: string }[] | null;
 };
 
-// Where the Yes / Pass choice stands for one match, as a small label.
-function decisionBadge(state: DecisionState, hasReport: boolean) {
+// Where the Yes / Pass choice stands for one match, as a small tag.
+function decisionTag(state: DecisionState, hasReport: boolean) {
   if (!hasReport) return null;
-  if (state.connected) return { label: "Matched", tone: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300", todo: false };
-  if (state.theyRequested && !wantsToMeet(state.mine)) {
-    return { label: "Wants to connect", tone: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300", todo: true };
-  }
-  if (state.mine === null) return { label: "Your call: yes or pass?", tone: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300", todo: true };
-  const done = "bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400";
-  if (state.mine === "yes") return { label: "You said yes", tone: done, todo: false };
-  if (state.mine === "request") return { label: "Request sent", tone: done, todo: false };
-  return { label: "Passed", tone: done, todo: false };
+  if (state.connected) return { label: "Matched", tone: CHIP_YOU };
+  if (state.theyRequested && !wantsToMeet(state.mine)) return { label: "Wants to connect", tone: CHIP_YOU };
+  if (state.mine === null) return { label: "Your call", tone: CHIP_YOU };
+  if (state.mine === "yes") return { label: "You said yes", tone: CHIP_NEUTRAL };
+  if (state.mine === "request") return { label: "Request sent", tone: CHIP_NEUTRAL };
+  return { label: "Passed", tone: CHIP_NEUTRAL };
 }
 
 async function MatchesLoader() {
@@ -63,23 +53,15 @@ async function MatchesLoader() {
       .order("created_at", { ascending: false }),
     loadDecisionStates(supabase),
   ]);
-  if (error) return <p className="mt-8 text-red-600">{error.message}</p>;
+  if (error) return <p className="text-red-600">{error.message}</p>;
 
   const rows = ((data ?? []) as Row[])
     .map((c) => {
       const report = single(c.reports);
       const state = states.get(c.id) ?? NO_DECISION;
-      return { ...c, report, state, badge: decisionBadge(state, Boolean(report)) };
+      return { ...c, report, state, tag: decisionTag(state, Boolean(report)) };
     })
     .sort((x, y) => (y.report?.score ?? -1) - (x.report?.score ?? -1));
-
-  if (rows.length === 0) {
-    return (
-      <div className="mt-8 rounded-2xl border border-zinc-200 bg-white p-6 text-center text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
-        No chats yet. Press “Find my next match” to send your twin on a first chat.
-      </div>
-    );
-  }
 
   // The deck: requests waiting for an answer first, then the best scores.
   const waiting = rows
@@ -87,46 +69,48 @@ async function MatchesLoader() {
     .sort((x, y) => Number(y.state.theyRequested) - Number(x.state.theyRequested));
 
   return (
-    <>
+    <div className="flex flex-col gap-6">
       <MatchDeck supabase={supabase} userId={user.id} waiting={waiting} />
-      <h2 className="mt-10 text-lg font-semibold text-black dark:text-zinc-50">All matches</h2>
-      <ul className="mt-3 flex flex-col gap-3">
-        {rows.map((c, i) => (
-          <li key={c.id}>
-            <Link
-              href={`/matches/${c.id}`}
-              className="flex gap-4 rounded-2xl border border-zinc-200 bg-white p-4 hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600"
-            >
-              {c.report ? (
-                <span
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-semibold ${scoreColor(c.report.score)}`}
+
+      <section className={`${CARD} overflow-hidden`}>
+        <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-5">
+          <h2 className={TITLE}>All matches</h2>
+          {waiting.length > 0 && <FindMatchButton />}
+        </div>
+        {rows.length === 0 ? (
+          <p className="px-5 pb-6 text-sm text-zinc-500">
+            No first chats yet. Find a match to send your twin on one.
+          </p>
+        ) : (
+          <ul className="pb-2">
+            {rows.map((c, i) => (
+              <li key={c.id}>
+                <Link
+                  href={`/matches/${c.id}`}
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900"
                 >
-                  {c.report.score}
-                </span>
-              ) : (
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs text-zinc-500 dark:bg-zinc-900">
-                  …
-                </span>
-              )}
-              <div className="min-w-0">
-                <p className="flex flex-wrap items-center gap-2 font-medium text-black dark:text-zinc-50">
-                  Match #{i + 1}
-                  {c.badge && (
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${c.badge.tone}`}>{c.badge.label}</span>
-                  )}
-                </p>
-                <p className="line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
-                  {c.report?.summary ??
-                    (c.status === "ended" ? "Open to see the report." : "Open to watch your twin chat.")}
-                </p>
-                <p className="mt-1 text-xs text-zinc-500">
-                  {c.end_reason ? END_REASON_LABELS[c.end_reason] : "In progress"} · {c.turn_count} turns
-                </p>
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </>
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-brand text-base font-medium text-brand-ink dark:text-pink-300">
+                    {c.report?.score ?? "…"}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium text-black dark:text-zinc-50">Match #{i + 1}</p>
+                      {c.tag && <span className={c.tag.tone}>{c.tag.label}</span>}
+                    </div>
+                    <p className="truncate text-sm text-zinc-500">
+                      {c.report?.summary ??
+                        (c.status === "ended" ? "Open to see the report." : "Your twin is chatting now.")}
+                    </p>
+                    <p className="text-xs text-zinc-400">
+                      {c.end_reason ? END_REASON_LABELS[c.end_reason] : "In progress"} · {c.turn_count} turns
+                    </p>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }

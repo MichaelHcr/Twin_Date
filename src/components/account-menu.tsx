@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
-import { TwinIcon } from "@/components/twin-icon";
 
 // The avatar button at the top right, with a menu for the profile and signing out.
 export function AccountMenu({ name, email, photoUrl }: { name: string; email: string; photoUrl: string | null }) {
@@ -59,8 +58,7 @@ export function AccountMenu({ name, email, photoUrl }: { name: string; email: st
           <Link href="/onboarding/profile" onClick={() => setOpen(false)} className={item}>
             Edit profile and photos
           </Link>
-          <Link href="/twin" onClick={() => setOpen(false)} className={`${item.replace("block ", "")} flex items-center gap-2`}>
-            <TwinIcon className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+          <Link href="/twin" onClick={() => setOpen(false)} className={item}>
             Your twin
           </Link>
           <Link href="/matches" onClick={() => setOpen(false)} className={item}>

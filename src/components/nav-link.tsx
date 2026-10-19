@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 // A header link that's highlighted on its own pages, with an optional count
-// badge for things waiting on the user (amber) or a plain total (grey).
+// badge for things waiting on the user (pink) or a plain total (grey).
 export function NavLink({
   href,
   children,
@@ -32,7 +32,7 @@ export function NavLink({
       {count > 0 && (
         <span
           className={`min-w-5 rounded-full px-1.5 text-center text-xs font-semibold leading-5 ${
-            urgent ? "bg-amber-500 text-white" : "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+            urgent ? "bg-brand text-white" : "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
           }`}
         >
           {count}

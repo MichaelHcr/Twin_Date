@@ -2,12 +2,12 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar";
-import { DayText } from "@/components/local-time";
-import { TwinBadge } from "@/components/twin-icon";
+import { DaysAgo } from "@/components/local-time";
 import { requireUser } from "@/lib/auth";
 import { loadDecisionStates, loadRevealedProfiles } from "@/lib/decisions";
 import { signPhotoUrls } from "@/lib/photos";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { BTN_PILL, CARD, COLUMN, PAGE, TWIN_NOTE } from "@/lib/ui";
 import { ChatComposer } from "./composer";
 import { ChatMessages } from "./messages";
 import { ChatRoom } from "./room";
@@ -15,9 +15,9 @@ import { ChatRoom } from "./room";
 // Person-to-person chat with a connected match (both said yes).
 export default function ChatPage({ params }: PageProps<"/chat/[id]">) {
   return (
-    <main className="flex flex-1 justify-center bg-zinc-50 px-4 py-6 font-sans sm:py-10 dark:bg-black">
-      <div className="flex w-full max-w-xl flex-col">
-        <Suspense fallback={<p className="mt-8 text-zinc-500">Loading…</p>}>
+    <main className={PAGE}>
+      <div className={COLUMN}>
+        <Suspense fallback={<div className={`${CARD} h-[28rem]`} />}>
           <ChatLoader params={params} />
         </Suspense>
       </div>
@@ -87,7 +87,7 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <ChatRoom conversationId={id} userId={user.id}>
-      <div className="flex h-[calc(100dvh-8rem)] min-h-[28rem] flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <div className={`${CARD} flex h-[calc(100dvh-8rem)] min-h-[28rem] flex-col overflow-hidden`}>
         <header className="flex items-center gap-3 border-b border-zinc-200 px-3 py-3 dark:border-zinc-800">
           <Link
             href="/connections"
@@ -101,22 +101,12 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
           <Avatar name={name} url={other?.photoUrls[0]} className="h-11 w-11 text-base" />
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-semibold leading-tight text-black dark:text-zinc-50">{name}</h1>
-            <p className="truncate text-xs text-zinc-500">
-              {[other?.age != null ? `${other.age}` : null, other?.city, other?.isSeed ? "Demo profile" : null]
-                .filter(Boolean)
-                .join(" · ")}
-              {matchedAt && (
-                <>
-                  {" · "}
-                  <DayText iso={matchedAt} prefix="Matched " />
-                </>
-              )}
+            <p className="truncate text-sm text-zinc-500">
+              {matchedAt ? <DaysAgo iso={matchedAt} prefix="Matched " /> : "Connected"}
+              {other?.isSeed && " · Demo profile"}
             </p>
           </div>
-          <Link
-            href={`/matches/${id}`}
-            className="shrink-0 rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-black hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-900"
-          >
+          <Link href={`/matches/${id}`} className={`${BTN_PILL} shrink-0`}>
             Twins&apos; report
           </Link>
         </header>
@@ -131,14 +121,13 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
         <div className="flex flex-1 flex-col-reverse overflow-y-auto px-4 py-4">
           <div className="flex flex-col">
             {insight && (
-              <div className="mb-4 flex items-start gap-3 rounded-2xl bg-violet-50 px-4 py-3 dark:bg-violet-950">
-              <TwinBadge onTint className="h-8 w-8" iconClassName="h-5 w-5" />
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">From your twins&apos; first chat</p>
-                <p className="mt-0.5 text-sm text-violet-900 dark:text-violet-100">{insight}</p>
-              </div>
-            </div>
-          )}
+              <p className={`${TWIN_NOTE} mb-4 flex gap-2`}>
+                <svg viewBox="0 0 24 24" className="mt-0.5 h-4 w-4 shrink-0" fill="currentColor" aria-hidden>
+                  <path d="M12 3l1.9 5.4L19 10l-5.1 1.6L12 17l-1.9-5.4L5 10l5.1-1.6L12 3zm6.5 10.5l.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9.9-2.4z" />
+                </svg>
+                <span>{insight}</span>
+              </p>
+            )}
             {error && <p className="text-sm text-red-600">{error.message}</p>}
             {empty ? (
               <div className="flex flex-col items-center py-10 text-center">
@@ -171,9 +160,6 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
         </div>
 
         <ChatComposer conversationId={id} starters={starters} />
-        <p className="bg-white px-4 pb-2 text-center text-[11px] text-zinc-400 dark:bg-zinc-950">
-          Written by you, not your twin. Double-click a message to heart it.
-        </p>
       </div>
     </ChatRoom>
   );

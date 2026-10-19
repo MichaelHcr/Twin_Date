@@ -1,12 +1,12 @@
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Avatar } from "@/components/avatar";
-import { TwinBadge } from "@/components/twin-icon";
 import { FindMatchButton } from "@/app/matches/find-button";
 import { loadChatSummaries } from "@/lib/chat";
 import { loadDecisionStates, loadRevealedProfiles, NO_DECISION, wantsToMeet } from "@/lib/decisions";
 import { scoreColor, single } from "@/lib/matches";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { BTN_SECONDARY, CARD as CARD_BASE, DOT } from "@/lib/ui";
 
 type Row = {
   id: string;
@@ -15,8 +15,7 @@ type Row = {
   reports: { score: number } | { score: number }[] | null;
 };
 
-const CARD =
-  "flex flex-col rounded-3xl border border-zinc-200 bg-white p-6 text-left shadow-sm dark:border-zinc-800 dark:bg-zinc-950";
+const CARD = `${CARD_BASE} flex flex-col p-6 text-left`;
 
 // The home page once onboarding is done: the two places people come back for.
 export async function HomeDashboard({ supabase, userId }: { supabase: SupabaseClient; userId: string }) {
@@ -52,10 +51,7 @@ export async function HomeDashboard({ supabase, userId }: { supabase: SupabaseCl
     <div className="mt-10 grid w-full max-w-3xl gap-4 sm:grid-cols-2">
       <section className={CARD}>
         <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
-            <TwinBadge className="h-9 w-9" iconClassName="h-6 w-6" />
-            Matches
-          </h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">Matches</h2>
           {topScore !== null && (
             <span className={`rounded-full px-3 py-1 text-sm font-semibold ${scoreColor(topScore)}`}>
               Top {topScore}
@@ -110,7 +106,7 @@ export async function HomeDashboard({ supabase, userId }: { supabase: SupabaseCl
         <div className="mt-auto pt-6">
           <Link
             href="/connections"
-            className="inline-block rounded-full border-2 border-black px-6 py-2.5 text-base font-semibold text-black hover:bg-zinc-100 dark:border-white dark:text-zinc-50 dark:hover:bg-zinc-900"
+            className={BTN_SECONDARY}
           >
             Open connections →
           </Link>
@@ -122,8 +118,8 @@ export async function HomeDashboard({ supabase, userId }: { supabase: SupabaseCl
 
 function Waiting({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mt-3 flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-300">
-      <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" aria-hidden />
+    <p className="mt-3 flex items-center gap-2 text-sm font-medium text-brand-ink dark:text-pink-200">
+      <span className={DOT} aria-hidden />
       {children}
     </p>
   );

@@ -30,10 +30,11 @@ function sameRun(a: ChatMessage | undefined, b: ChatMessage | undefined) {
   return Math.abs(tb.getTime() - ta.getTime()) <= GROUP_GAP_MS && ta.toDateString() === tb.toDateString();
 }
 
-// Bubble corners tighten where a run continues, like Instagram.
+// Bubble corners: a small corner on your side marks the tail, and corners
+// tighten where a run continues, like iMessage and Instagram.
 function corners(mine: boolean, joinsPrev: boolean, joinsNext: boolean) {
-  if (mine) return `rounded-3xl ${joinsPrev ? "rounded-tr-md" : ""} ${joinsNext ? "rounded-br-md" : ""}`;
-  return `rounded-3xl ${joinsPrev ? "rounded-tl-md" : ""} ${joinsNext ? "rounded-bl-md" : ""}`;
+  if (mine) return `rounded-2xl rounded-br-md ${joinsPrev ? "rounded-tr-md" : ""}`;
+  return `rounded-2xl ${joinsPrev ? "rounded-tl-md" : ""} ${joinsNext ? "rounded-bl-md" : ""}`;
 }
 
 function Heart({ className }: { className: string }) {
@@ -109,8 +110,8 @@ export function ChatMessages({
             </div>
             {hearted && (
               <span
-                className={`absolute -bottom-3 flex items-center gap-0.5 rounded-full border border-zinc-200 bg-white px-1.5 py-0.5 text-brand shadow-sm dark:border-zinc-700 dark:bg-zinc-900 ${
-                  m.mine ? "left-2" : "right-2"
+                className={`absolute -bottom-3 flex items-center gap-0.5 rounded-full border border-zinc-200 bg-white px-1.5 py-0.5 text-brand dark:border-zinc-700 dark:bg-zinc-900 ${
+                  m.mine ? "-left-2" : "-right-2"
                 }`}
               >
                 <Heart className="h-3 w-3" />
@@ -137,7 +138,7 @@ export function ChatMessages({
         return (
           <div key={m.id} className={`flex flex-col ${joinsPrev ? "mt-0.5" : "mt-3"} ${hearted ? "mb-3" : ""}`}>
             {isClient && newDay && (
-              <p className="mb-2 mt-2 self-center text-xs font-semibold uppercase tracking-wide text-zinc-400">
+              <p className="mb-2 mt-2 self-center text-sm text-zinc-400">
                 {formatDay(at)}
               </p>
             )}
@@ -150,7 +151,7 @@ export function ChatMessages({
               <div className="group flex items-end gap-2">
                 {/* The avatar slot is always there, so a run's bubbles line up. */}
                 <div className="w-7 shrink-0">
-                  {!joinsNext && <Avatar name={otherName} url={otherPhotoUrl} className="h-7 w-7 text-[10px]" />}
+                  {!joinsNext && <Avatar name={otherName} url={otherPhotoUrl} className="h-7 w-7 text-xs" />}
                 </div>
                 {bubble}
                 {heartButton}
@@ -162,7 +163,7 @@ export function ChatMessages({
                 title={at.toLocaleString()}
                 className={`mt-1 text-[11px] text-zinc-400 ${m.mine ? "self-end pr-9" : "ml-9 self-start"}`}
               >
-                {m === last && seen ? `Seen · ${formatClock(at)}` : formatClock(at)}
+                {m === last && seen ? `Seen ${formatClock(at)}` : formatClock(at)}
               </time>
             )}
           </div>
@@ -171,7 +172,7 @@ export function ChatMessages({
 
       {otherTyping && (
         <div className="mt-3 flex items-end gap-2" aria-live="polite">
-          <Avatar name={otherName} url={otherPhotoUrl} className="h-7 w-7 text-[10px]" />
+          <Avatar name={otherName} url={otherPhotoUrl} className="h-7 w-7 text-xs" />
           <div className="flex items-center gap-1 rounded-3xl bg-zinc-100 px-4 py-3 dark:bg-zinc-800">
             <span className="sr-only">{otherName} is typing</span>
             {[0, 150, 300].map((delay) => (

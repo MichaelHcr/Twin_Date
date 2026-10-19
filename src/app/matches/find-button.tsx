@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { refreshPages } from "@/app/actions";
+import { BTN_PRIMARY } from "@/lib/ui";
 
 // Asks the Scout for the next match, then opens the page where the twins chat.
 export function FindMatchButton() {
@@ -30,7 +31,7 @@ export function FindMatchButton() {
       <button
         onClick={find}
         disabled={pending}
-        className="rounded-full bg-black px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+        className={BTN_PRIMARY}
       >
         {pending ? "Finding someone…" : "Find my next match"}
       </button>

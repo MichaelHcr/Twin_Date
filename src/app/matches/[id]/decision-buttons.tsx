@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import type { Decision } from "@/lib/decisions";
+import { BTN_PRIMARY, BTN_SECONDARY } from "@/lib/ui";
 import { decide } from "./decision-actions";
 
 export type DecisionOption = { decision: Decision; label: string; primary?: boolean };
@@ -36,11 +37,7 @@ export function DecisionButtons({
             key={o.decision}
             onClick={() => choose(o.decision)}
             disabled={pending}
-            className={
-              o.primary
-                ? "rounded-full bg-black px-6 py-2.5 text-base font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-black"
-                : "rounded-full border border-zinc-300 px-6 py-2.5 text-base font-medium text-black disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-50"
-            }
+            className={o.primary ? BTN_PRIMARY : BTN_SECONDARY}
           >
             {o.label}
           </button>

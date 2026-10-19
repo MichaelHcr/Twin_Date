@@ -43,15 +43,20 @@ export function ShortTime({ iso, className }: { iso: string; className?: string 
   );
 }
 
-// A day for a sentence: "today", "yesterday", "Monday" or "Oct 12".
-export function DayText({ iso, prefix = "" }: { iso: string; prefix?: string }) {
+// "today", "yesterday", "3 days ago", or a date after a month.
+export function DaysAgo({ iso, prefix = "" }: { iso: string; prefix?: string }) {
   const isClient = useIsClient();
   if (!isClient) return null;
-  const day = formatDay(new Date(iso));
+  const then = new Date(iso);
+  const now = new Date();
+  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((startOf(now) - startOf(then)) / 86_400_000);
+  const text =
+    days <= 0 ? "today" : days === 1 ? "yesterday" : days < 30 ? `${days} days ago` : `on ${formatDay(then)}`;
   return (
-    <time dateTime={iso}>
+    <time dateTime={iso} title={then.toLocaleString()}>
       {prefix}
-      {day === "Today" || day === "Yesterday" ? day.toLowerCase() : day}
+      {text}
     </time>
   );
 }
