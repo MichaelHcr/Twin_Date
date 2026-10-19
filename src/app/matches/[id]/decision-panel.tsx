@@ -4,7 +4,7 @@ import { cache } from "react";
 import { Avatar } from "@/components/avatar";
 import { loadDecisionStates, loadRevealedProfiles, NO_DECISION, wantsToMeet, type RevealedProfile } from "@/lib/decisions";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { BTN_PRIMARY, CARD, DOT } from "@/lib/ui";
+import { BTN_PRIMARY, CARD, DOT_ALERT, STORY_RING } from "@/lib/ui";
 import { DecisionButtons, type DecisionOption } from "./decision-buttons";
 
 type Conversation = { id: string; user_a: string; user_b: string; end_reason: string | null };
@@ -111,7 +111,7 @@ export async function DecisionBar({
   return (
     <section className={`${CARD} sticky bottom-4 z-10 p-4 shadow-lg`}>
       <p className="flex items-center gap-2 font-semibold text-black dark:text-zinc-50">
-        <span className={DOT} aria-hidden />
+        <span className={DOT_ALERT} aria-hidden />
         {title}
       </p>
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{body}</p>
@@ -122,10 +122,19 @@ export async function DecisionBar({
 
 function RevealCard({ conversationId, profile }: { conversationId: string; profile: RevealedProfile }) {
   return (
-    <section className="rounded-2xl border border-pink-200 bg-brand-soft p-6 dark:border-pink-900 dark:bg-pink-950">
-      <p className="text-sm font-semibold text-brand-ink dark:text-pink-200">You both said yes</p>
+    <section className={`${CARD} p-6`}>
+      <p className="flex items-center gap-1.5 text-sm font-semibold text-black dark:text-zinc-50">
+        <span aria-hidden className="text-brand">
+          ♥
+        </span>
+        You both said yes
+      </p>
       <div className="mt-3 flex items-center gap-4">
-        <Avatar name={profile.name} url={profile.photoUrls[0]} className="h-16 w-16 border-2 border-brand text-xl" />
+        <span className={STORY_RING}>
+          <span className="block rounded-full bg-white p-[2px] dark:bg-zinc-950">
+            <Avatar name={profile.name} url={profile.photoUrls[0]} className="h-16 w-16 text-xl" />
+          </span>
+        </span>
         <div>
           <p className="text-xl font-semibold text-black dark:text-zinc-50">
             {profile.name}

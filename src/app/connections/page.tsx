@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { loadChatSummaries } from "@/lib/chat";
 import { loadDecisionStates, loadRevealedProfiles, NO_DECISION, wantsToMeet } from "@/lib/decisions";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { BTN_PRIMARY, CARD, COLUMN, DOT, LABEL, PAGE, TITLE } from "@/lib/ui";
+import { BTN_PRIMARY, CARD, COLUMN, DOT_UNREAD, LABEL, PAGE, STORY_RING, TITLE } from "@/lib/ui";
 
 // The inbox, like Instagram DMs: a row of new matches you haven't messaged yet
 // and requests waiting for an answer, then your chats, most recent first.
@@ -79,11 +79,11 @@ async function Inbox() {
                   return (
                     <li key={c.id} className="shrink-0">
                       <Link href={`/chat/${c.id}`} className="flex w-16 flex-col items-center gap-1 text-center">
-                        <Avatar
-                          name={p?.name ?? "?"}
-                          url={p?.photoUrls[0]}
-                          className="h-16 w-16 border-2 border-brand text-xl"
-                        />
+                        <span className={STORY_RING}>
+                          <span className="block rounded-full bg-white p-[2px] dark:bg-zinc-950">
+                            <Avatar name={p?.name ?? "?"} url={p?.photoUrls[0]} className="h-14 w-14 text-xl" />
+                          </span>
+                        </span>
                         <span className="w-full truncate text-sm text-zinc-600 dark:text-zinc-400">
                           {p?.name ?? "New match"}
                         </span>
@@ -140,7 +140,7 @@ async function Inbox() {
                             {chat.lastContent}
                           </p>
                           {unread && (
-                            <span className={DOT}>
+                            <span className={DOT_UNREAD}>
                               <span className="sr-only">{chat.unread} unread</span>
                             </span>
                           )}

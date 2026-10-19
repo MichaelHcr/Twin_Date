@@ -6,7 +6,7 @@ import { loadChatSummaries } from "@/lib/chat";
 import { loadDecisionStates, loadRevealedProfiles, NO_DECISION, wantsToMeet } from "@/lib/decisions";
 import { scoreColor, single } from "@/lib/matches";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { BTN_SECONDARY, CARD as CARD_BASE, DOT } from "@/lib/ui";
+import { BTN_SECONDARY, CARD as CARD_BASE, DOT_ALERT } from "@/lib/ui";
 
 type Row = {
   id: string;
@@ -118,8 +118,8 @@ export async function HomeDashboard({ supabase, userId }: { supabase: SupabaseCl
 
 function Waiting({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mt-3 flex items-center gap-2 text-sm font-medium text-brand-ink dark:text-pink-200">
-      <span className={DOT} aria-hidden />
+    <p className="mt-3 flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+      <span className={DOT_ALERT} aria-hidden />
       {children}
     </p>
   );

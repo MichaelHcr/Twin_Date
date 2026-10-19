@@ -50,7 +50,7 @@ export function ChatComposer({ conversationId, starters = [] }: { conversationId
                   box.current?.focus();
                 });
               }}
-              className="shrink-0 rounded-full border border-pink-200 bg-brand-soft px-3 py-1.5 text-left text-xs font-medium text-brand-ink hover:border-brand dark:border-pink-900 dark:bg-pink-950 dark:text-pink-200"
+              className="shrink-0 rounded-full border border-zinc-300 bg-white px-3 py-1.5 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
             >
               {s}
             </button>
@@ -81,7 +81,7 @@ export function ChatComposer({ conversationId, starters = [] }: { conversationId
           onClick={send}
           disabled={pending || !text.trim()}
           aria-label="Send"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-white transition hover:bg-brand-hover disabled:bg-zinc-300 dark:disabled:bg-zinc-700"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white transition hover:bg-blue-600 disabled:bg-zinc-300 dark:disabled:bg-zinc-700"
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden>
             <path d="M12 19V5M6 11l6-6 6 6" strokeLinecap="round" strokeLinejoin="round" />
