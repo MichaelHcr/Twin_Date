@@ -73,6 +73,12 @@ export function Chat({ initialMessages }: { initialMessages: ChatMessage[] }) {
             >
               See your summary and meet your twin
             </Link>
+            <Link
+              href="/onboarding/profile"
+              className="mt-2 block text-sm text-zinc-600 underline dark:text-zinc-400"
+            >
+              Review your profile and interview summary
+            </Link>
           </div>
         ) : undefined
       }
