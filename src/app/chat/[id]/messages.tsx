@@ -15,6 +15,8 @@ export type ChatMessage = {
   // Who has hearted it.
   heartedByMe: boolean;
   heartedByThem: boolean;
+  // A signed URL for an attached photo, if any.
+  imageUrl: string | null;
 };
 
 // Messages in a row from the same person within this gap, on the same day, form
@@ -93,7 +95,19 @@ export function ChatMessages({
         const hearted = m.heartedByMe || m.heartedByThem;
 
         const bubble = (
-          <div className="relative max-w-[75%]">
+          <div className={`relative flex max-w-[75%] flex-col gap-1 ${m.mine ? "items-end" : "items-start"}`}>
+            {m.imageUrl && (
+              <a href={m.imageUrl} target="_blank" rel="noreferrer" onDoubleClick={(e) => { e.preventDefault(); heart(m.id); }}>
+                {/* Signed Storage URLs change on every visit, so a plain img is simpler than next/image here. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={m.imageUrl}
+                  alt={m.mine ? "Photo you sent" : "Photo they sent"}
+                  className="max-h-72 w-auto max-w-full rounded-2xl object-cover"
+                />
+              </a>
+            )}
+            {(m.content || !m.imageUrl) && (
             <div
               onDoubleClick={() => heart(m.id)}
               title="Double-click to heart"
@@ -109,6 +123,7 @@ export function ChatMessages({
             >
               {emojiOnly ? m.content.trim() : m.content}
             </div>
+            )}
             {hearted && (
               <span
                 className={`absolute -bottom-3 flex items-center gap-0.5 rounded-full border border-zinc-200 bg-white px-1.5 py-0.5 text-brand dark:border-zinc-700 dark:bg-zinc-900 ${

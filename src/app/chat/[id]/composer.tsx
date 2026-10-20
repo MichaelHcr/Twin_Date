@@ -1,8 +1,20 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { CHAT_PHOTO_BUCKET, CHAT_PHOTO_TYPES, MAX_CHAT_PHOTO_BYTES } from "@/lib/chat";
+import { createClient } from "@/lib/supabase/client";
 import { sendChatMessage } from "./actions";
 import { useChatRoom } from "./room";
+
+// A small built-in picker: the emoji people use most in chats.
+const EMOJI = [
+  "😀", "😂", "🥹", "😊", "😍", "🥰", "😘", "😉", "😎", "🤔",
+  "😅", "😭", "😤", "😈", "🙈", "🤗", "😴", "🥲", "🤭", "🙃",
+  "❤️", "💕", "🔥", "✨", "👍", "👏", "🙌", "🎉", "💯", "🙏",
+  "☕", "🍜", "🍕", "🍣", "🍷", "🎬", "🎧", "🏖️", "🥾", "🐶",
+];
+
+type Photo = { previewUrl: string; path: string | null; uploading: boolean };
 
 // The message bar at the bottom of the chat: a pill-shaped box that grows with
 // the text, and a round send button. Enter sends; Shift+Enter adds a new line.
@@ -24,7 +36,51 @@ export function ChatComposer({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const box = useRef<HTMLTextAreaElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [photo, setPhoto] = useState<Photo | null>(null);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const { notifyTyping } = useChatRoom();
+
+  // Free the preview's memory when it's replaced or the page closes (not when
+  // the same photo just finishes uploading).
+  const previewUrl = photo?.previewUrl;
+  useEffect(() => () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
+
+  // Uploads a picked photo straight to this chat's folder; it's sent with the next message.
+  async function attach(file: File) {
+    setError(null);
+    const ext = CHAT_PHOTO_TYPES[file.type];
+    if (!ext) return setError("Send a JPEG, PNG, WebP or GIF.");
+    if (file.size > MAX_CHAT_PHOTO_BYTES) return setError("That photo is over 8 MB. Try a smaller one.");
+    const previewUrl = URL.createObjectURL(file);
+    setPhoto({ previewUrl, path: null, uploading: true });
+    const path = `${conversationId}/${crypto.randomUUID()}.${ext}`;
+    const { error: uploadError } = await createClient()
+      .storage.from(CHAT_PHOTO_BUCKET)
+      .upload(path, file, { contentType: file.type });
+    if (uploadError) {
+      setPhoto(null);
+      setError(`Couldn't upload the photo: ${uploadError.message}`);
+      return;
+    }
+    setPhoto({ previewUrl, path, uploading: false });
+  }
+
+  // Puts an emoji where the cursor is.
+  function insertEmoji(emoji: string) {
+    const el = box.current;
+    const start = el?.selectionStart ?? text.length;
+    const end = el?.selectionEnd ?? text.length;
+    const next = text.slice(0, start) + emoji + text.slice(end);
+    setText(next);
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(start + emoji.length, start + emoji.length);
+      resize();
+    });
+  }
 
   function resize() {
     const el = box.current;
@@ -33,16 +89,20 @@ export function ChatComposer({
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }
 
+  const canSend = Boolean(text.trim() || (photo?.path && !photo.uploading));
+
   function send() {
     const content = text.trim();
-    if (!content || pending) return;
+    if (!canSend || pending) return;
     setError(null);
+    setEmojiOpen(false);
     startTransition(async () => {
-      const result = await sendChatMessage(conversationId, content);
+      const result = await sendChatMessage(conversationId, content, photo?.path ?? null);
       if (result) {
         setError(result.error);
       } else {
         setText("");
+        setPhoto(null);
         requestAnimationFrame(resize);
       }
     });
@@ -115,7 +175,75 @@ export function ChatComposer({
           ))}
         </div>
       )}
-      <div className="flex items-end gap-2">
+      {photo && (
+        <div className="mb-3 flex items-center gap-3">
+          <span className="relative">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={photo.previewUrl} alt="Photo to send" className="h-20 w-20 rounded-xl object-cover" />
+            {photo.uploading && (
+              <span className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40 text-xs font-medium text-white">
+                Uploading…
+              </span>
+            )}
+            <button
+              onClick={() => setPhoto(null)}
+              aria-label="Remove photo"
+              className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black text-sm text-white dark:bg-white dark:text-black"
+            >
+              ×
+            </button>
+          </span>
+          <span className="text-xs text-zinc-500">Add a message if you like, then send.</span>
+        </div>
+      )}
+      {emojiOpen && (
+        <div className="mb-3 grid grid-cols-10 gap-1 rounded-2xl border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-950">
+          {EMOJI.map((e) => (
+            <button
+              key={e}
+              onClick={() => insertEmoji(e)}
+              className="rounded-lg py-1 text-xl hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              aria-label={`Add ${e}`}
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="flex items-end gap-1.5">
+        <button
+          onClick={() => setEmojiOpen((o) => !o)}
+          aria-label="Emoji"
+          aria-expanded={emojiOpen}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 ${
+            emojiOpen ? "bg-zinc-100 dark:bg-zinc-900" : ""
+          }`}
+        >
+          😊
+        </button>
+        <button
+          onClick={() => fileInput.current?.click()}
+          aria-label="Add a photo"
+          disabled={pending || photo?.uploading}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-black disabled:opacity-50 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
+        >
+          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden>
+            <rect x="3" y="5" width="18" height="14" rx="3" />
+            <circle cx="9" cy="10" r="1.6" />
+            <path d="M21 16l-5-5-8 8" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept={Object.keys(CHAT_PHOTO_TYPES).join(",")}
+          className="sr-only"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) attach(file);
+            e.target.value = "";
+          }}
+        />
         <textarea
           ref={box}
           value={text}
@@ -137,7 +265,7 @@ export function ChatComposer({
         />
         <button
           onClick={send}
-          disabled={pending || !text.trim()}
+          disabled={pending || !canSend}
           aria-label="Send"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-500 text-white transition hover:bg-violet-600 disabled:bg-zinc-300 dark:disabled:bg-zinc-700"
         >

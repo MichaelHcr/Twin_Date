@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar";
@@ -7,6 +8,7 @@ import { requireUser } from "@/lib/auth";
 import { loadDecisionStates, loadRevealedProfiles } from "@/lib/decisions";
 import { signPhotoUrls } from "@/lib/photos";
 import { ensureChatTopics, type ChatTopic } from "@/lib/agents/chat-topics";
+import { CHAT_PHOTO_BUCKET } from "@/lib/chat";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BTN_PILL, CARD, COLUMN, PAGE } from "@/lib/ui";
 import { ChatComposer } from "./composer";
@@ -20,6 +22,18 @@ const QUIET_AFTER_DAYS = 2;
 // Whole days since a time. Pages here render per request, so "now" is the request time.
 function daysSince(iso: string | null) {
   return iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000) : null;
+}
+
+type ChatRow = { id: number; sender_id: string; content: string; created_at: string; image_path?: string | null };
+
+// The chat's messages, with photo paths once migration 0013 has added the
+// column; before that, the same query without it, so the chat still works.
+async function loadChatMessages(supabase: SupabaseClient, conversationId: string) {
+  const query = (columns: string) =>
+    supabase.from("chat_messages").select(columns).eq("conversation_id", conversationId).order("created_at").order("id");
+  const withPhotos = await query("id, sender_id, content, created_at, image_path");
+  const result = withPhotos.error?.code === "42703" ? await query("id, sender_id, content, created_at") : withPhotos;
+  return { data: (result.data ?? null) as ChatRow[] | null, error: result.error };
 }
 
 // Person-to-person chat with a connected match (both said yes).
@@ -71,12 +85,7 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
     { data: twinMessages },
   ] = await Promise.all([
     loadRevealedProfiles(admin, [otherId]),
-    supabase
-      .from("chat_messages")
-      .select("id, sender_id, content, created_at")
-      .eq("conversation_id", id)
-      .order("created_at")
-      .order("id"),
+    loadChatMessages(supabase, id),
     supabase.from("profiles").select("display_name, photos").eq("user_id", user.id).single(),
     supabase.from("reports").select("summary, questions_to_ask").eq("conversation_id", id).maybeSingle(),
     // Hearts and "Seen" need migration 0009; without it these come back empty.
@@ -121,6 +130,14 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
   const insight = personal ? personal.charAt(0).toUpperCase() + personal.slice(1) : null;
   const matchedAt = (decided?.[0]?.created_at as string | undefined) ?? null;
   const heartRows = (hearts ?? []) as { message_id: number; user_id: string }[];
+  // Photos sent in the chat, signed for an hour (migration 0013's policies let
+  // either person in a connected chat sign its photos).
+  const imagePaths = (messages ?? []).flatMap((m) => (m.image_path ? [m.image_path as string] : []));
+  const { data: signed } =
+    imagePaths.length > 0
+      ? await supabase.storage.from(CHAT_PHOTO_BUCKET).createSignedUrls(imagePaths, 60 * 60)
+      : { data: [] as { path: string | null; signedUrl: string | null }[] };
+  const imageUrlOf = new Map((signed ?? []).map((x) => [x.path, x.signedUrl]));
 
   return (
     <ChatRoom conversationId={id} userId={user.id}>
@@ -198,6 +215,7 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
                   createdAt: m.created_at,
                   heartedByMe: heartRows.some((h) => h.message_id === m.id && h.user_id === user.id),
                   heartedByThem: heartRows.some((h) => h.message_id === m.id && h.user_id !== user.id),
+                  imageUrl: m.image_path ? (imageUrlOf.get(m.image_path) ?? null) : null,
                 }))}
               />
             )}

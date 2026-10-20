@@ -152,7 +152,7 @@ async function Inbox() {
                             }`}
                           >
                             {chat.lastFromMe ? "You: " : ""}
-                            {chat.lastContent}
+                            {chat.lastContent || "📷 Photo"}
                           </p>
                           {unread && (
                             <span className={DOT_UNREAD}>
