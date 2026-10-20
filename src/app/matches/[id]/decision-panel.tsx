@@ -12,8 +12,13 @@ const CARD =
   "rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950";
 
 // Both parts of the page read the same state; cache() makes it one query per request.
-const loadState = cache(async (supabase: SupabaseClient, conversationId: string) => {
+export const loadState = cache(async (supabase: SupabaseClient, conversationId: string) => {
   return (await loadDecisionStates(supabase, conversationId)).get(conversationId) ?? NO_DECISION;
+});
+
+// The other person's revealed profile. Call only once loadState says they're connected.
+export const loadRevealed = cache(async (otherId: string) => {
+  return (await loadRevealedProfiles(createAdminClient(), [otherId])).get(otherId) ?? null;
 });
 
 // The Yes / Pass choice is still open: either nothing decided yet, or they sent a
@@ -38,7 +43,7 @@ export async function DecisionStatus({
 
   if (state.connected) {
     const otherId = conversation.user_a === userId ? conversation.user_b : conversation.user_a;
-    const profile = (await loadRevealedProfiles(createAdminClient(), [otherId])).get(otherId);
+    const profile = await loadRevealed(otherId);
     return profile ? <RevealCard conversationId={conversation.id} profile={profile} /> : null;
   }
   if (needsAnswer(state)) return null; // DecisionBar asks at the bottom of the screen.

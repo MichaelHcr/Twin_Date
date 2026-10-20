@@ -2,7 +2,9 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { loadDecisionStates, NO_DECISION, wantsToMeet, type DecisionState } from "@/lib/decisions";
-import { END_REASON_LABELS, scoreColor, single } from "@/lib/matches";
+import type { View } from "@/lib/agents/judge";
+import { END_REASON_LABELS, fillMatch, scoreColor, single } from "@/lib/matches";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { FindMatchButton } from "./find-button";
 import { BackLink } from "@/components/back-link";
 
@@ -35,13 +37,17 @@ export default function MatchesPage() {
   );
 }
 
+type ReportRow = { score: number; summary: string; views: Record<"a" | "b", View> | null };
+
 type Row = {
   id: string;
   status: string;
   end_reason: string | null;
   turn_count: number;
   created_at: string;
-  reports: { score: number; summary: string } | { score: number; summary: string }[] | null;
+  user_a: string;
+  user_b: string;
+  reports: ReportRow | ReportRow[] | null;
 };
 
 // Where the Yes / Pass choice stands for one match, as a small label.
@@ -59,12 +65,12 @@ function decisionBadge(state: DecisionState, hasReport: boolean) {
 }
 
 async function MatchesLoader() {
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   // Row-level security only returns conversations this user is part of.
   const [{ data, error }, states] = await Promise.all([
     supabase
       .from("conversations")
-      .select("id, status, end_reason, turn_count, created_at, reports(score, summary)")
+      .select("id, user_a, user_b, status, end_reason, turn_count, created_at, reports(score, summary, views)")
       .order("created_at", { ascending: false }),
     loadDecisionStates(supabase),
   ]);
@@ -86,6 +92,27 @@ async function MatchesLoader() {
   }
 
   const waiting = rows.filter((c) => c.badge?.todo).length;
+
+  // Each report's headline is written to this user; after a mutual yes it uses
+  // the other person's first name (row-level security hides it, so the admin
+  // client reads it, only for connected matches).
+  const otherOf = (c: Row) => (c.user_a === user.id ? c.user_b : c.user_a);
+  const connectedIds = rows.filter((c) => states.get(c.id)?.connected).map(otherOf);
+  const names = new Map<string, string>();
+  if (connectedIds.length > 0) {
+    const { data: profiles } = await createAdminClient()
+      .from("profiles")
+      .select("user_id, display_name")
+      .in("user_id", connectedIds);
+    for (const p of profiles ?? []) if (p.display_name) names.set(p.user_id, p.display_name.split(" ")[0]);
+  }
+  const blurb = (c: (typeof rows)[number]) => {
+    if (!c.report) return null;
+    const view = c.report.views?.[c.user_a === user.id ? "a" : "b"];
+    if (!view) return c.report.summary;
+    const name = states.get(c.id)?.connected ? names.get(otherOf(c)) : null;
+    return fillMatch(view.headline, name);
+  };
 
   return (
     <>
@@ -121,7 +148,7 @@ async function MatchesLoader() {
                   )}
                 </p>
                 <p className="line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
-                  {c.report?.summary ??
+                  {blurb(c) ??
                     (c.status === "ended" ? "Open to see the report." : "Open to watch your twin chat.")}
                 </p>
                 <p className="mt-1 text-xs text-zinc-500">
