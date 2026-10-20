@@ -1,4 +1,4 @@
--- Photos in the real chat. Run 0012 first.
+-- Photos in the real chat. Run 0013_chat_topics.sql first.
 -- Run once in Supabase: Dashboard > SQL Editor > New query > paste > Run.
 --
 -- Files go in the private "chat-photos" bucket at <conversation_id>/<uuid>.<ext>.

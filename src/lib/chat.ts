@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Unread counts and latest-message previews for the user's chats (migration 0008).
 
-// Photos sent in chats live here, at <conversation_id>/<uuid>.<ext> (migration 0013).
+// Photos sent in chats live here, at <conversation_id>/<uuid>.<ext> (migration 0014).
 export const CHAT_PHOTO_BUCKET = "chat-photos";
 export const CHAT_PHOTO_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",

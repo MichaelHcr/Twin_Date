@@ -7,7 +7,7 @@ import { z } from "zod";
 // people can already see it) and the real chat so far, and picks specific
 // things the twins talked about (a place, a show, a hobby) that the two people
 // haven't brought up yet. Each comes with a short line either person could send.
-// Cached in chat_topics (migration 0012) until someone sends a new message.
+// Cached in chat_topics (migration 0013) until someone sends a new message.
 
 const client = new Anthropic();
 const MODEL = "claude-opus-5-5";
@@ -33,7 +33,7 @@ For each, write one casual message each person could send, in their own voice, t
 type Line = { speaker: string; content: string };
 
 // Returns cached topics written after the latest real message, or writes new
-// ones. Returns null if they can't be stored (migration 0012 not applied) or
+// ones. Returns null if they can't be stored (migration 0013 not applied) or
 // the model gives no answer; the chat then falls back to the report's questions.
 export async function ensureChatTopics(
   admin: SupabaseClient,

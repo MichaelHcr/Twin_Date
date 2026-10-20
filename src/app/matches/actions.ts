@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 
-// Hides a passed match from the user's own list (migration 0011). Nothing is
+// Hides a passed match from the user's own list (migration 0012). Nothing is
 // deleted, and the other person never sees it. Returns an error message, or null.
 export async function hideMatch(conversationId: string) {
   if (!z.uuid().safeParse(conversationId).success) return { error: "That match can't be hidden." };

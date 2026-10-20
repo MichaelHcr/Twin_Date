@@ -12,7 +12,7 @@ const MessageSchema = z.object({
 });
 
 // Sends a chat message to a connected match: text, a photo the browser just
-// uploaded to this chat's folder (migration 0013), or both. Row-level security
+// uploaded to this chat's folder (migration 0014), or both. Row-level security
 // refuses it unless both people want to meet. Returns an error message, or null.
 export async function sendChatMessage(conversationId: string, content: string, imagePath: string | null = null) {
   const parsed = MessageSchema.safeParse({ conversationId, content, imagePath });
@@ -59,7 +59,7 @@ export async function markChatRead(conversationId: string) {
   return true;
 }
 
-// Adds or removes the user's heart on a message (migration 0009). Row-level
+// Adds or removes the user's heart on a message (migration 0010). Row-level
 // security only allows it in a chat they're connected in.
 export async function toggleHeart(conversationId: string, messageId: number) {
   const parsed = z.object({ conversationId: z.uuid(), messageId: z.number().int().positive() }).safeParse({

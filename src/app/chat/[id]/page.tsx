@@ -26,7 +26,7 @@ function daysSince(iso: string | null) {
 
 type ChatRow = { id: number; sender_id: string; content: string; created_at: string; image_path?: string | null };
 
-// The chat's messages, with photo paths once migration 0013 has added the
+// The chat's messages, with photo paths once migration 0014 has added the
 // column; before that, the same query without it, so the chat still works.
 async function loadChatMessages(supabase: SupabaseClient, conversationId: string) {
   const query = (columns: string) =>
@@ -88,7 +88,7 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
     loadChatMessages(supabase, id),
     supabase.from("profiles").select("display_name, photos").eq("user_id", user.id).single(),
     supabase.from("reports").select("summary, questions_to_ask").eq("conversation_id", id).maybeSingle(),
-    // Hearts and "Seen" need migration 0009; without it these come back empty.
+    // Hearts and "Seen" need migration 0010; without it these come back empty.
     supabase.from("chat_reactions").select("message_id, user_id").eq("conversation_id", id),
     supabase.rpc("chat_other_read_at", { conv: id }),
     // When the second yes came in, for "Matched …". Read with the admin client:
@@ -130,7 +130,7 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
   const insight = personal ? personal.charAt(0).toUpperCase() + personal.slice(1) : null;
   const matchedAt = (decided?.[0]?.created_at as string | undefined) ?? null;
   const heartRows = (hearts ?? []) as { message_id: number; user_id: string }[];
-  // Photos sent in the chat, signed for an hour (migration 0013's policies let
+  // Photos sent in the chat, signed for an hour (migration 0014's policies let
   // either person in a connected chat sign its photos).
   const imagePaths = (messages ?? []).flatMap((m) => (m.image_path ? [m.image_path as string] : []));
   const { data: signed } =

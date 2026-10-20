@@ -73,7 +73,7 @@ async function MatchesGrid() {
       .select("id, user_a, user_b, end_reason, turn_count, ended_at, reports(score)")
       .order("created_at", { ascending: false }),
     loadDecisionStates(supabase),
-    // Needs migration 0011; without it nothing is hidden.
+    // Needs migration 0012; without it nothing is hidden.
     supabase.from("hidden_matches").select("conversation_id"),
   ]);
   const hidden = new Set((hiddenRows ?? []).map((h) => h.conversation_id as string));
