@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ensureMatchCard, type MatchCard } from "@/lib/agents/match-card";
+import type { View } from "@/lib/agents/judge";
 import { ageOf } from "@/lib/decisions";
+import { fillMatch } from "@/lib/matches";
 import { TOPICS } from "@/lib/profile-topics";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CHIP_FLAG, CHIP_NEUTRAL } from "@/lib/ui";
@@ -31,6 +33,8 @@ type ReportRow = {
   evidence_json: Evidence[] | null;
   red_flags: string[] | null;
   questions_to_ask: string[] | null;
+  // Per-reader versions of the report (main's migration 0010); older reports have none.
+  views: Record<"a" | "b", View> | null;
 };
 
 // Topics with set answers, where the same answer on both sides is worth a tag
@@ -62,7 +66,7 @@ export async function loadMatchCards(supabase: SupabaseClient, userId: string, i
     // Row-level security returns only reports of this user's conversations.
     supabase
       .from("reports")
-      .select("conversation_id, score, summary, evidence_json, red_flags, questions_to_ask")
+      .select("conversation_id, score, summary, evidence_json, red_flags, questions_to_ask, views")
       .in("conversation_id", items.map((c) => c.id)),
     // Age, city and goal only.
     admin.from("profiles").select("user_id, birthdate, city, goal").in("user_id", otherIds),
@@ -92,7 +96,10 @@ export async function loadMatchCards(supabase: SupabaseClient, userId: string, i
       : fallback
         ? { text: fallback.quote, topic: null, highlight: null }
         : null;
-    const firstSentence = shortLine(report.summary);
+    // Without the card agent's headline: the Judge's headline written to this
+    // reader ("you" and "this match"), or else a short cut of the summary.
+    const view = report.views?.[mySide];
+    const fallbackHeadline = view?.headline ? fillMatch(view.headline) : shortLine(report.summary);
     const tags: Tag[] = card
       ? card.tags
       : [
@@ -108,7 +115,7 @@ export async function loadMatchCards(supabase: SupabaseClient, userId: string, i
       age: ageOf(profile?.birthdate ?? null),
       place: [profile?.city, profile?.goal ? SHORT_GOALS[profile.goal] : null].filter(Boolean).join(" · "),
       score: report.score,
-      headline: card?.headline ?? firstSentence,
+      headline: card?.headline ?? fallbackHeadline,
       quote,
       tags,
     });

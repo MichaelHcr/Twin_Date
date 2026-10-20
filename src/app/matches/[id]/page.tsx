@@ -1,8 +1,9 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { END_REASON_LABELS, scoreColor } from "@/lib/matches";
-import { DecisionBar, DecisionStatus } from "./decision-panel";
+import type { View } from "@/lib/agents/judge";
+import { END_REASON_LABELS, fillMatch, scoreColor } from "@/lib/matches";
+import { DecisionBar, DecisionStatus, loadRevealed, loadState } from "./decision-panel";
 import { LiveRunner } from "./live-runner";
 import { BackLink } from "@/components/back-link";
 
@@ -23,8 +24,6 @@ export default function MatchPage({ params }: PageProps<"/matches/[id]">) {
   );
 }
 
-type Evidence = { speaker: "a" | "b"; quote: string; why: string };
-
 async function MatchLoader({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { supabase, user } = await requireUser();
@@ -40,7 +39,7 @@ async function MatchLoader({ params }: { params: Promise<{ id: string }> }) {
   const [{ data: report }, { data: messages }] = await Promise.all([
     supabase
       .from("reports")
-      .select("score, summary, evidence_json, red_flags, questions_to_ask")
+      .select("score, summary, red_flags, questions_to_ask, views")
       .eq("conversation_id", id)
       .maybeSingle(),
     supabase
@@ -52,7 +51,14 @@ async function MatchLoader({ params }: { params: Promise<{ id: string }> }) {
   ]);
 
   const mySide = user.id === conversation.user_a ? "a" : "b";
-  const who = (side: string) => (side === mySide ? "Your twin" : "Their twin");
+  const view = (report?.views as Record<"a" | "b", View> | null)?.[mySide] ?? null;
+  // After a mutual yes, the report uses their first name instead of "this match".
+  let name: string | null = null;
+  if (view && (await loadState(supabase, conversation.id)).connected) {
+    const otherId = mySide === "a" ? conversation.user_b : conversation.user_a;
+    name = (await loadRevealed(otherId))?.name.split(" ")[0] ?? null;
+  }
+  const fill = (text: string) => fillMatch(text, name);
 
   const unfinished =
     conversation.status !== "ended" || (!report && conversation.end_reason !== "error");
@@ -69,42 +75,67 @@ async function MatchLoader({ params }: { params: Promise<{ id: string }> }) {
             >
               {report.score}
             </span>
-            <p className="text-sm text-zinc-500">
-              {conversation.end_reason ? END_REASON_LABELS[conversation.end_reason] : "In progress"} ·{" "}
-              {conversation.turn_count} turns · you are Member {mySide.toUpperCase()}
-            </p>
+            <div>
+              {view && <p className="font-medium text-black dark:text-zinc-50">{fill(view.headline)}</p>}
+              <p className="text-sm text-zinc-500">
+                {conversation.end_reason ? END_REASON_LABELS[conversation.end_reason] : "In progress"} ·{" "}
+                {conversation.turn_count} turns
+              </p>
+            </div>
           </div>
-          <p className="mt-4 leading-7 text-black dark:text-zinc-50">{report.summary}</p>
 
-          {(report.red_flags as string[]).length > 0 && (
+          {view ? (
             <>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <ReportList title="Why it could work" items={view.pros.map(fill)} tone="pro" />
+                <ReportList title="What to watch" items={view.cons.map(fill)} tone="con" empty="Nothing major." />
+              </div>
+
               <h2 className="mt-6 font-semibold text-black dark:text-zinc-50">Red flags</h2>
-              <ul className="mt-2 list-disc pl-5 text-red-700 dark:text-red-400">
-                {(report.red_flags as string[]).map((f) => (
-                  <li key={f}>{f}</li>
+              {view.red_flags.length > 0 ? (
+                <ul className="mt-2 list-disc pl-5 text-red-700 dark:text-red-400">
+                  {view.red_flags.map((f) => (
+                    <li key={f}>{fill(f)}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-zinc-600 dark:text-zinc-400">No red flags triggered.</p>
+              )}
+
+              <h2 className="mt-6 font-semibold text-black dark:text-zinc-50">If you meet</h2>
+              <ul className="mt-2 flex flex-col gap-2 text-zinc-800 dark:text-zinc-200">
+                {view.next_steps.map((step) => (
+                  <li key={step} className="flex gap-2">
+                    <span className="mt-0.5 text-zinc-400" aria-hidden>
+                      ☐
+                    </span>
+                    {fill(step)}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            // Reports written before per-person views (migration 0010).
+            <>
+              <p className="mt-4 leading-7 text-black dark:text-zinc-50">{report.summary}</p>
+              <h2 className="mt-6 font-semibold text-black dark:text-zinc-50">Red flags</h2>
+              {(report.red_flags as string[]).length > 0 ? (
+                <ul className="mt-2 list-disc pl-5 text-red-700 dark:text-red-400">
+                  {(report.red_flags as string[]).map((f) => (
+                    <li key={f}>{f}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-zinc-600 dark:text-zinc-400">No red flags triggered.</p>
+              )}
+              <h2 className="mt-6 font-semibold text-black dark:text-zinc-50">Ask in person</h2>
+              <ul className="mt-2 list-disc pl-5 text-zinc-800 dark:text-zinc-200">
+                {(report.questions_to_ask as string[]).map((q) => (
+                  <li key={q}>{q}</li>
                 ))}
               </ul>
             </>
           )}
-
-          <h2 className="mt-6 font-semibold text-black dark:text-zinc-50">What stood out</h2>
-          <ul className="mt-2 flex flex-col gap-3">
-            {(report.evidence_json as Evidence[]).map((e) => (
-              <li key={e.quote} className="text-sm">
-                <blockquote className="border-l-2 border-zinc-300 pl-3 text-zinc-800 dark:border-zinc-700 dark:text-zinc-200">
-                  “{e.quote}” <span className="text-zinc-500">({who(e.speaker)})</span>
-                </blockquote>
-                <p className="mt-1 pl-3 text-zinc-500">{e.why}</p>
-              </li>
-            ))}
-          </ul>
-
-          <h2 className="mt-6 font-semibold text-black dark:text-zinc-50">Ask in person</h2>
-          <ul className="mt-2 list-disc pl-5 text-zinc-800 dark:text-zinc-200">
-            {(report.questions_to_ask as string[]).map((q) => (
-              <li key={q}>{q}</li>
-            ))}
-          </ul>
         </section>
       ) : (
         conversation.end_reason === "error" && (
@@ -136,6 +167,39 @@ async function MatchLoader({ params }: { params: Promise<{ id: string }> }) {
       </section>
 
       {report && <DecisionBar supabase={supabase} conversation={conversation} />}
+    </div>
+  );
+}
+
+function ReportList({
+  title,
+  items,
+  tone,
+  empty,
+}: {
+  title: string;
+  items: string[];
+  tone: "pro" | "con";
+  empty?: string;
+}) {
+  const mark = tone === "pro" ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400";
+  return (
+    <div className="rounded-xl bg-zinc-50 p-4 dark:bg-zinc-900">
+      <h2 className="font-semibold text-black dark:text-zinc-50">{title}</h2>
+      {items.length > 0 ? (
+        <ul className="mt-2 flex flex-col gap-1.5 text-sm text-zinc-800 dark:text-zinc-200">
+          {items.map((item) => (
+            <li key={item} className="flex gap-2">
+              <span className={mark} aria-hidden>
+                {tone === "pro" ? "+" : "–"}
+              </span>
+              {item}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 text-sm text-zinc-500">{empty}</p>
+      )}
     </div>
   );
 }

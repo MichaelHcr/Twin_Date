@@ -7,7 +7,7 @@ import { z } from "zod";
 // ("Kids: aligned", "Hiking", "Ask: moving?"), and each member's most telling
 // quote with its topic and key words, like a dating-app card. It reads
 // only the finished report, which both people can already see, and is cached
-// in reports.card_json (migration 0011), so each report is summarized once.
+// in reports.card_json (migration 0012), so each report is summarized once.
 
 const client = new Anthropic();
 const MODEL = "claude-opus-5-5";
@@ -52,7 +52,7 @@ type Report = {
 };
 
 // Returns the cached card, or writes one. Returns null if the card can't be
-// stored yet (migration 0011 not applied) or the model gives no answer; the
+// stored yet (migration 0012 not applied) or the model gives no answer; the
 // page then falls back to the report's own text.
 export async function ensureMatchCard(admin: SupabaseClient, conversationId: string): Promise<MatchCard | null> {
   const { data, error } = await admin
