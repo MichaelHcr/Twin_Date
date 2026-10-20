@@ -15,26 +15,37 @@ const MODEL = "claude-opus-5-5";
 // A conversation that ended on a locked dealbreaker can't score above this.
 const RED_FLAG_SCORE_CAP = 20;
 
+// One person's view of the report. "{match}" stands for the other person; the
+// report page shows "this match" until both say yes, then their first name.
+export const ViewSchema = z.object({
+  headline: z.string().describe("One short sentence (under 15 words) on this match, to the reader"),
+  pros: z.array(z.string()).describe("2-5 reasons this could work, each a short phrase (under 12 words)"),
+  cons: z
+    .array(z.string())
+    .describe("0-4 concerns or open questions, each a short phrase (under 12 words); empty if none"),
+  red_flags: z
+    .array(z.string())
+    .describe("0-3 dealbreaker issues from the reader's side, each under 12 words; empty if none"),
+  next_steps: z
+    .array(z.string())
+    .describe("2-4 things to do or ask if they meet, each starting with a verb, under 15 words"),
+});
+
+export type View = z.infer<typeof ViewSchema>;
+
 export const ReportSchema = z.object({
   score: z.number().int().min(0).max(100).describe("How promising this match is, 0-100"),
   summary: z
     .string()
-    .describe("3-5 sentences on how the chat went and why this score, for both people to read"),
-  evidence: z
-    .array(
-      z.object({
-        speaker: z.enum(["a", "b"]),
-        quote: z.string().describe("Copied exactly from one message in the transcript"),
-        why: z.string().describe("What this shows, in one sentence"),
-      }),
-    )
-    .describe("3-6 quotes that most support the score, good and bad"),
+    .describe("2-3 neutral sentences on how the chat went and why this score, using Member A and Member B"),
+  for_member_a: ViewSchema.describe("The report as Member A reads it"),
+  for_member_b: ViewSchema.describe("The report as Member B reads it"),
   red_flags: z
     .array(z.string())
-    .describe("Real conflicts on values or dealbreakers, one sentence each; empty if none"),
+    .describe("Real conflicts on values or dealbreakers, one neutral sentence each; empty if none"),
   questions_to_ask: z
     .array(z.string())
-    .describe("3-5 specific questions to ask in person, especially about anything left unresolved"),
+    .describe("3-5 specific questions either person could ask the other directly, in second person"),
 });
 
 export type Report = z.infer<typeof ReportSchema>;
@@ -50,15 +61,17 @@ Score how promising this match is:
 - 76-100: strong match on the big things, with genuine chemistry
 Weigh relationship goals, kids, money, lifestyle and location, values, and how well they actually got along.
 
+Write two views of the same report, one for each person (for_member_a, for_member_b):
+- Address the reader as "you". Write {match} (exactly, with the braces) for the other person, for example "{match} wants to stay in LA" or "{match}'s twin couldn't answer about drugs". Never write Member A, Member B, he or she in a view.
+- The twins spoke for each person, so "you said" and "{match} said" are fine. When a twin couldn't answer, say "your twin" or "{match}'s twin".
+- pros and cons are short, scannable phrases, not sentences. Put the most important first. Fold in the concrete moments that stood out, such as a shared joke or a dodged question.
+- red_flags: only real dealbreaker issues, phrased from the reader's side and kept simple, for example "Drug use not confirmed by {match}" or "{match} doesn't want kids; you do". Leave it empty if there are none.
+- next_steps: concrete action items for a first meeting, for example "Ask {match} where they stand on drugs". Start each with a verb.
+
 Rules:
 - Base everything on what was said in the transcript. Twins may improvise on minor topics, so treat ledger assumptions and anything unconfirmed as open questions, not facts.
-- Evidence quotes must be copied exactly from a single message.
-- Call them Member A and Member B, and use they/them for both. Never include names, contact details, workplaces or addresses.
+- Use they/them for both people. Never include names, contact details, workplaces or addresses.
 - Be honest and specific, not a cheerleader. A short chat that ended early still gets a fair score for what it showed.`;
-
-function normalize(text: string) {
-  return text.toLowerCase().replace(/\s+/g, " ").trim();
-}
 
 export async function judgeConversation(admin: SupabaseClient, conversationId: string) {
   const { data: conversation } = await admin
@@ -132,16 +145,22 @@ ${transcript}
   if (conversation.end_reason === "red_flag") {
     report.score = Math.min(report.score, RED_FLAG_SCORE_CAP);
   }
-  const said = messages.map((m) => ({ speaker: m.speaker, text: normalize(m.content) }));
-  report.evidence = report.evidence.filter((e) =>
-    said.some((m) => m.speaker === e.speaker && m.text.includes(normalize(e.quote))),
-  );
+  // Views must not say "Member A/B"; if one slips through, the reader becomes "you"
+  // and the other person {match}, which the page fills in.
+  const views = { a: report.for_member_a, b: report.for_member_b };
+  for (const [side, view] of Object.entries(views)) {
+    const fix = (t: string) =>
+      t.replace(/\bMember ([AB])\b/g, (_, s: string) => (s.toLowerCase() === side ? "you" : "{match}"));
+    view.headline = fix(view.headline);
+    for (const key of ["pros", "cons", "red_flags", "next_steps"] as const) view[key] = view[key].map(fix);
+  }
 
   const { error } = await admin.from("reports").upsert({
     conversation_id: conversationId,
     score: report.score,
     summary: report.summary,
-    evidence_json: report.evidence,
+    evidence_json: [],
+    views,
     red_flags: report.red_flags,
     questions_to_ask: report.questions_to_ask,
   });

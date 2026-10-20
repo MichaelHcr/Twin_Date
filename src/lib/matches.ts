@@ -28,3 +28,13 @@ export function sameCity(a: string | null | undefined, b: string | null | undefi
     (city ?? "").split(",")[0].trim().replace(/\s+/g, " ").toLowerCase();
   return name(a) !== "" && name(a) === name(b);
 }
+
+// The Judge writes "{match}" for the other person in each view: "this match" until
+// both say yes, then their first name. Capitalized at the start of a sentence.
+export function fillMatch(text: string, name?: string | null) {
+  return text.replace(/\{match\}/g, (_, offset: number) => {
+    if (name) return name;
+    const start = offset === 0 || /[.!?;:]\s*$/.test(text.slice(0, offset));
+    return start ? "This match" : "this match";
+  });
+}
