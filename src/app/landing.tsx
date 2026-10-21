@@ -136,7 +136,7 @@ function Bubble({
 
 function Problem() {
   return (
-    <section className="mx-auto max-w-5xl px-4 py-16 sm:py-20">
+    <section className="mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-20">
       <p className="text-sm font-semibold uppercase tracking-[0.14em] text-(--love)">The problem</p>
       <h2 className="mt-4 max-w-2xl text-4xl font-bold leading-tight tracking-[-0.03em] sm:text-5xl">
         Dating apps make <span className="text-(--love)">you</span> do the screening.
@@ -156,7 +156,7 @@ function Problem() {
 
 function Solution() {
   return (
-    <section className="relative mx-auto max-w-5xl px-4 py-16 sm:py-20">
+    <section className="relative mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-20">
       <Glow className="-right-40 -top-10 h-[26rem] w-[32rem] bg-[#d9cffc] opacity-40" />
       <div className="relative">
         <p className="text-sm font-semibold uppercase tracking-[0.14em] text-(--twin)">How it works</p>
