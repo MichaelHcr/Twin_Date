@@ -21,7 +21,7 @@ Tue Oct 20 night.**
 | Twin-to-twin Orchestrator v1 (step 3) | Done, on branch, tested against mocks only | `src/lib/agents/orchestrator.ts`, `scripts/converse.ts` |
 | Judge agent + `/matches` shortlist + `/matches/[id]` report (step 4) | Done, on branch | `src/lib/agents/judge.ts`, `scripts/judge.ts`, `src/app/matches` |
 | Scout + "Find my next match" + live chat page | Done, on branch; needs `SUPABASE_SECRET_KEY` on Vercel | `src/lib/agents/scout.ts`, `src/app/api/matches/find`, `src/app/api/conversations/[id]/step` |
-| Stripe (test mode): `/pricing`, Checkout, webhook, weekly quota | Done, on branch `feature/stripe-payments`; needs migration `0009` and Stripe keys | `src/lib/billing.ts`, `src/app/api/stripe`, `src/app/pricing` |
+| Stripe (test mode): `/pricing`, Checkout, webhook, weekly quota | Done, on `main` (PR #12); migration `0009` applied | `src/lib/billing.ts`, `src/app/api/stripe`, `src/app/pricing` |
 
 **Branch to continue from:** `feature/profile-onboarding`. It is pushed but **not merged into
 `main` yet**: the live site still shows only sign-in.
@@ -137,6 +137,8 @@ ranked by score.
 Code: `src/lib/billing.ts` (plans and quotas), `src/app/api/stripe/{checkout,portal,webhook}`,
 `src/app/pricing`. Prices are created inline at checkout, so no products are needed in Stripe.
 Quota = conversations the user started in the last 7 days (Free 3, Plus 15, Pro 40).
+Paying users switch between Plus and Pro on `/pricing` (`/api/stripe/change-plan`); Stripe prorates the
+difference for the rest of the billing period, charging an upgrade right away and crediting a downgrade.
 1. Run `supabase/migrations/0009_stripe.sql` in the Supabase SQL Editor.
 2. Stripe dashboard, **Test mode on** → Developers → API keys: copy the secret key (`sk_test_...`)
    into `.env.local` and Vercel as `STRIPE_SECRET_KEY`.

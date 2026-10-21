@@ -42,3 +42,37 @@ export function ShortTime({ iso, className }: { iso: string; className?: string 
     </time>
   );
 }
+
+// "today", "yesterday", "3 days ago", or a date after a month.
+export function DaysAgo({ iso, prefix = "" }: { iso: string; prefix?: string }) {
+  const isClient = useIsClient();
+  if (!isClient) return null;
+  const then = new Date(iso);
+  const now = new Date();
+  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((startOf(now) - startOf(then)) / 86_400_000);
+  const text =
+    days <= 0 ? "today" : days === 1 ? "yesterday" : days < 30 ? `${days} days ago` : `on ${formatDay(then)}`;
+  return (
+    <time dateTime={iso} title={then.toLocaleString()}>
+      {prefix}
+      {text}
+    </time>
+  );
+}
+
+// How long two people have been connected, in the viewer's calendar days:
+// "Matched today", "Known 1 day", "Known 12 days".
+export function KnownFor({ since }: { since: string }) {
+  const isClient = useIsClient();
+  if (!isClient) return null;
+  const then = new Date(since);
+  const now = new Date();
+  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((startOf(now) - startOf(then)) / 86_400_000);
+  return (
+    <time dateTime={since} title={`Matched ${then.toLocaleDateString()}`}>
+      {days <= 0 ? "Matched today" : `Known ${days} ${days === 1 ? "day" : "days"}`}
+    </time>
+  );
+}

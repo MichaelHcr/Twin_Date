@@ -1,164 +1,282 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
+import { ScoreRing } from "@/components/score-ring";
 import { requireUser } from "@/lib/auth";
-import { loadDecisionStates, NO_DECISION, wantsToMeet, type DecisionState } from "@/lib/decisions";
-import type { View } from "@/lib/agents/judge";
-import { END_REASON_LABELS, fillMatch, scoreColor, single } from "@/lib/matches";
+import {
+  loadDecisionStates,
+  loadRevealedProfiles,
+  NO_DECISION,
+  wantsToMeet,
+  type DecisionState,
+} from "@/lib/decisions";
+import { END_REASON_LABELS, single } from "@/lib/matches";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { CARD, COLUMN, DOT_ALERT, PAGE } from "@/lib/ui";
 import { FindMatchButton } from "./find-button";
-import { BackLink } from "@/components/back-link";
+import { HideButton } from "./hide-button";
+import { loadMatchCards, TagChip, type CardData } from "./match-card";
 
-// The shortlist: every twin conversation the user is part of, best score first.
+// Matches, like Hinge's "Likes you": tiles for the matches waiting on your
+// answer, then the people you matched with, then quieter groups you can open.
+// You decide on the report page (tap a tile), never here.
+
+// A yes that hasn't turned into a match stops waiting after this long, so
+// nobody's card waits forever. It doesn't say whether the other side passed or
+// never answered.
+const EXPIRES_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
+
 export default function MatchesPage() {
   return (
-    <main className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 font-sans dark:bg-black">
-      <div className="flex w-full max-w-xl flex-col">
-        <BackLink href="/">Home</BackLink>
-        <h1 className="mt-5 text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-          Your matches
-        </h1>
-        <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-          First chats your twin had, ranked by how promising they look.
-        </p>
-        <div className="mt-6 flex flex-wrap items-start gap-3">
+    <main className={PAGE}>
+      <div className={COLUMN}>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">Matches</h1>
           <FindMatchButton />
-          <Link
-            href="/connections"
-            className="rounded-full border-2 border-black px-6 py-2.5 text-base font-semibold text-black hover:bg-zinc-100 dark:border-white dark:text-zinc-50 dark:hover:bg-zinc-900"
-          >
-            Your connections →
-          </Link>
         </div>
-        <Suspense fallback={<p className="mt-8 text-zinc-500">Loading…</p>}>
-          <MatchesLoader />
+        <Suspense fallback={<div className={`${CARD} mt-6 h-96`} />}>
+          <MatchesGrid />
         </Suspense>
       </div>
     </main>
   );
 }
 
-type ReportRow = { score: number; summary: string; views: Record<"a" | "b", View> | null };
-
 type Row = {
   id: string;
-  status: string;
-  end_reason: string | null;
-  turn_count: number;
-  created_at: string;
   user_a: string;
   user_b: string;
-  reports: ReportRow | ReportRow[] | null;
+  end_reason: string | null;
+  turn_count: number;
+  ended_at: string | null;
+  reports: { score: number } | { score: number }[] | null;
 };
 
-// Where the Yes / Pass choice stands for one match, as a small label.
-function decisionBadge(state: DecisionState, hasReport: boolean) {
-  if (!hasReport) return null;
-  if (state.connected) return { label: "Matched", tone: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300", todo: false };
-  if (state.theyRequested && !wantsToMeet(state.mine)) {
-    return { label: "Wants to connect", tone: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300", todo: true };
-  }
-  if (state.mine === null) return { label: "Your call: yes or pass?", tone: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300", todo: true };
-  const done = "bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400";
-  if (state.mine === "yes") return { label: "You said yes", tone: done, todo: false };
-  if (state.mine === "request") return { label: "Request sent", tone: done, todo: false };
-  return { label: "Passed", tone: done, todo: false };
+// Pages here render per request (they read the session), so "now" is the request time.
+function isExpired(endedAt: string | null) {
+  return Boolean(endedAt) && Date.now() - new Date(endedAt!).getTime() > EXPIRES_AFTER_MS;
 }
 
-async function MatchesLoader() {
+const needsAnswer = (s: DecisionState) =>
+  !s.connected && !wantsToMeet(s.mine) && (s.mine === null || s.theyRequested);
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <h2 className="mb-2 mt-6 text-sm font-semibold text-zinc-500">{children}</h2>;
+}
+
+async function MatchesGrid() {
   const { supabase, user } = await requireUser();
   // Row-level security only returns conversations this user is part of.
-  const [{ data, error }, states] = await Promise.all([
+  const [{ data, error }, states, { data: hiddenRows }] = await Promise.all([
     supabase
       .from("conversations")
-      .select("id, user_a, user_b, status, end_reason, turn_count, created_at, reports(score, summary, views)")
+      .select("id, user_a, user_b, end_reason, turn_count, ended_at, reports(score)")
       .order("created_at", { ascending: false }),
     loadDecisionStates(supabase),
+    // Needs migration 0013; without it nothing is hidden.
+    supabase.from("hidden_matches").select("conversation_id"),
   ]);
-  if (error) return <p className="mt-8 text-red-600">{error.message}</p>;
+  const hidden = new Set((hiddenRows ?? []).map((h) => h.conversation_id as string));
+  if (error) return <p className="mt-6 text-red-600">{error.message}</p>;
 
-  const rows = ((data ?? []) as Row[])
-    .map((c) => {
-      const report = single(c.reports);
-      return { ...c, report, badge: decisionBadge(states.get(c.id) ?? NO_DECISION, Boolean(report)) };
-    })
-    .sort((x, y) => (y.report?.score ?? -1) - (x.report?.score ?? -1));
+  const rows = ((data ?? []) as Row[]).map((c) => ({
+    ...c,
+    score: single(c.reports)?.score ?? null,
+    state: states.get(c.id) ?? NO_DECISION,
+    otherId: c.user_a === user.id ? c.user_b : c.user_a,
+  }));
+  const chatting = rows.filter((r) => r.score === null && r.end_reason !== "error");
+  const reported = rows.filter((r) => r.score !== null).sort((x, y) => y.score! - x.score!);
+  const expired = (r: (typeof rows)[number]) => isExpired(r.ended_at);
 
-  if (rows.length === 0) {
+  const toReview = reported
+    .filter((r) => needsAnswer(r.state))
+    .sort((x, y) => Number(y.state.theyRequested) - Number(x.state.theyRequested));
+  const matched = reported.filter((r) => r.state.connected);
+  const waitingOnThem = reported.filter((r) => !r.state.connected && wantsToMeet(r.state.mine));
+  const pending = waitingOnThem.filter((r) => !expired(r));
+  const lapsed = waitingOnThem.filter(expired);
+  const passed = reported.filter((r) => r.state.mine === "pass" && !needsAnswer(r.state) && !hidden.has(r.id));
+
+  const [cards, people] = await Promise.all([
+    loadMatchCards(supabase, user.id, [...toReview, ...pending, ...lapsed, ...passed]),
+    matched.length > 0 ? loadRevealedProfiles(createAdminClient(), matched.map((m) => m.otherId)) : new Map(),
+  ]);
+
+  if (reported.length === 0 && chatting.length === 0) {
     return (
-      <div className="mt-8 rounded-2xl border border-zinc-200 bg-white p-6 text-center text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
-        No chats yet. Press “Find my next match” to send your twin on a first chat.
+      <div className={`${CARD} mt-6 px-6 py-10 text-center`}>
+        <p className="font-semibold text-black dark:text-zinc-50">Your twin hasn&apos;t had a first chat yet</p>
+        <p className="mt-1 text-sm text-zinc-500">Find a match and your twin will go on the first chat for you.</p>
       </div>
     );
   }
 
-  const waiting = rows.filter((c) => c.badge?.todo).length;
-
-  // Each report's headline is written to this user; after a mutual yes it uses
-  // the other person's first name (row-level security hides it, so the admin
-  // client reads it, only for connected matches).
-  const otherOf = (c: Row) => (c.user_a === user.id ? c.user_b : c.user_a);
-  const connectedIds = rows.filter((c) => states.get(c.id)?.connected).map(otherOf);
-  const names = new Map<string, string>();
-  if (connectedIds.length > 0) {
-    const { data: profiles } = await createAdminClient()
-      .from("profiles")
-      .select("user_id, display_name")
-      .in("user_id", connectedIds);
-    for (const p of profiles ?? []) if (p.display_name) names.set(p.user_id, p.display_name.split(" ")[0]);
-  }
-  const blurb = (c: (typeof rows)[number]) => {
-    if (!c.report) return null;
-    const view = c.report.views?.[c.user_a === user.id ? "a" : "b"];
-    if (!view) return c.report.summary;
-    const name = states.get(c.id)?.connected ? names.get(otherOf(c)) : null;
-    return fillMatch(view.headline, name);
-  };
-
   return (
-    <>
-      {waiting > 0 && (
-        <p className="mt-8 flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
-          <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" aria-hidden />
-          {waiting === 1 ? "1 match is" : `${waiting} matches are`} waiting for your yes or pass. Open the ones marked below.
-        </p>
+    <div>
+      {chatting.map((c) => (
+        <Link
+          key={c.id}
+          href={`/matches/${c.id}`}
+          className={`${CARD} mt-6 flex items-center gap-3 px-4 py-3 hover:border-zinc-400 dark:hover:border-zinc-600`}
+        >
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-violet-500" aria-hidden />
+          <p className="flex-1 text-sm text-zinc-700 dark:text-zinc-300">
+            Your twin is on a first chat · {c.turn_count} turns so far
+          </p>
+          <span className="text-sm font-semibold text-black dark:text-zinc-50">Watch →</span>
+        </Link>
+      ))}
+
+      {toReview.length > 0 && (
+        <section>
+          <SectionLabel>To review · {toReview.length}</SectionLabel>
+          <ul className="grid grid-cols-2 gap-3">
+            {toReview.map((r) => {
+              const card = cards.get(r.id);
+              return card ? (
+                <li key={r.id}>
+                  <ReviewTile id={r.id} card={card} request={r.state.theyRequested} />
+                </li>
+              ) : null;
+            })}
+          </ul>
+        </section>
       )}
-      <ul className={`${waiting > 0 ? "mt-4" : "mt-8"} flex flex-col gap-3`}>
-        {rows.map((c, i) => (
-          <li key={c.id}>
-            <Link
-              href={`/matches/${c.id}`}
-              className="flex gap-4 rounded-2xl border border-zinc-200 bg-white p-4 hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600"
-            >
-              {c.report ? (
-                <span
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-semibold ${scoreColor(c.report.score)}`}
-                >
-                  {c.report.score}
-                </span>
-              ) : (
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs text-zinc-500 dark:bg-zinc-900">
-                  …
-                </span>
-              )}
-              <div className="min-w-0">
-                <p className="flex flex-wrap items-center gap-2 font-medium text-black dark:text-zinc-50">
-                  Match #{i + 1}
-                  {c.badge && (
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${c.badge.tone}`}>{c.badge.label}</span>
-                  )}
-                </p>
-                <p className="line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
-                  {blurb(c) ??
-                    (c.status === "ended" ? "Open to see the report." : "Open to watch your twin chat.")}
-                </p>
-                <p className="mt-1 text-xs text-zinc-500">
-                  {c.end_reason ? END_REASON_LABELS[c.end_reason] : "In progress"} · {c.turn_count} turns
-                </p>
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </>
+
+      {matched.length > 0 && (
+        <section>
+          <SectionLabel>Matched · {matched.length}</SectionLabel>
+          <ul className="grid grid-cols-3 gap-3">
+            {matched.map((m) => {
+              const p = people.get(m.otherId);
+              return (
+                <li key={m.id}>
+                  <Link
+                    href={`/chat/${m.id}`}
+                    className={`${CARD} flex h-full flex-col items-center px-2 py-4 text-center hover:border-zinc-400 dark:hover:border-zinc-600`}
+                  >
+                    <Avatar name={p?.name ?? "?"} url={p?.photoUrls[0]} className="h-16 w-16 text-xl" />
+                    <p className="mt-2 w-full truncate font-semibold text-black dark:text-zinc-50">{p?.name ?? "Match"}</p>
+                    <p className="text-sm text-zinc-500">
+                      <span className="text-brand" aria-hidden>
+                        ♥
+                      </span>{" "}
+                      {m.score}%
+                    </p>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
+      {pending.length > 0 && (
+        <Group title={`Waiting for them · ${pending.length}`} hint="You said yes. They haven't answered yet.">
+          {pending.map((r) => (
+            <QuietRow key={r.id} id={r.id} card={cards.get(r.id)} note={r.state.mine === "request" ? "Request sent" : "You said yes"} />
+          ))}
+        </Group>
+      )}
+
+      {passed.length > 0 && (
+        <Group title={`Passed · ${passed.length}`} hint="Only you can see these. Changed your mind? Open one to send a request.">
+          {passed.map((r) => (
+            <QuietRow
+              key={r.id}
+              id={r.id}
+              card={cards.get(r.id)}
+              note={r.end_reason === "red_flag" ? END_REASON_LABELS.red_flag : "You passed"}
+              action="Send request"
+              hideable
+            />
+          ))}
+        </Group>
+      )}
+
+      {lapsed.length > 0 && (
+        <Group title={`Expired · ${lapsed.length}`} hint="These didn't turn into a match within a week.">
+          {lapsed.map((r) => (
+            <QuietRow key={r.id} id={r.id} card={cards.get(r.id)} note="This one didn't turn into a match" />
+          ))}
+        </Group>
+      )}
+    </div>
+  );
+}
+
+// A match waiting on your answer: score, who, one line and a tag or two.
+function ReviewTile({ id, card, request }: { id: string; card: CardData; request: boolean }) {
+  return (
+    <Link
+      href={`/matches/${id}`}
+      className={`${CARD} relative flex h-full flex-col p-4 hover:border-zinc-400 dark:hover:border-zinc-600`}
+    >
+      <span className={`${DOT_ALERT} absolute right-4 top-4`} aria-label="Waiting for your answer" />
+      <ScoreRing score={card.score} size={52} />
+      <p className="mt-3 font-semibold text-black dark:text-zinc-50">
+        {card.alias}
+        {card.age !== null && `, ${card.age}`}
+      </p>
+      {card.place && <p className="truncate text-sm text-zinc-500">{card.place}</p>}
+      {request && <p className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">Sent you a request</p>}
+      <p className="mt-2 line-clamp-3 text-sm text-zinc-800 dark:text-zinc-200">{card.headline}</p>
+      {card.tags.length > 0 && (
+        <div className="mt-auto flex flex-wrap gap-1.5 pt-3">
+          {card.tags.slice(0, 2).map((t) => (
+            <TagChip key={t.label} tag={t} />
+          ))}
+        </div>
+      )}
+    </Link>
+  );
+}
+
+// A closed-by-default group for the matches that don't need you right now.
+function Group({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
+  return (
+    <details className={`${CARD} group mt-6 overflow-hidden`}>
+      <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-zinc-600 dark:text-zinc-400 [&::-webkit-details-marker]:hidden">
+        {title}
+        <span aria-hidden className="text-lg leading-none transition group-open:rotate-90">
+          ›
+        </span>
+      </summary>
+      <p className="border-t border-zinc-200 px-4 pt-3 text-xs text-zinc-500 dark:border-zinc-800">{hint}</p>
+      <ul className="pb-1">{children}</ul>
+    </details>
+  );
+}
+
+function QuietRow({
+  id,
+  card,
+  note,
+  action,
+  hideable = false,
+}: {
+  id: string;
+  card?: CardData;
+  note: string;
+  action?: string;
+  hideable?: boolean;
+}) {
+  if (!card) return null;
+  return (
+    <li className="flex items-center pr-3 hover:bg-zinc-50 dark:hover:bg-zinc-900">
+      <Link href={`/matches/${id}`} className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3">
+        <ScoreRing score={card.score} size={40} className="text-zinc-500 dark:text-zinc-400" />
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-black dark:text-zinc-50">
+            {card.alias}
+            {card.age !== null && `, ${card.age}`}
+          </p>
+          <p className="truncate text-sm text-zinc-500">{note}</p>
+        </div>
+        {action && <span className="shrink-0 text-sm font-semibold text-black dark:text-zinc-50">{action}</span>}
+      </Link>
+      {hideable && <HideButton conversationId={id} />}
+    </li>
   );
 }

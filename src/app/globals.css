@@ -8,6 +8,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  /* Twin Date pink: buttons, your chat bubbles, rings and unread dots. */
+  --color-brand: #d4537e;
+  --color-brand-hover: #c0436d;
+  --color-brand-soft: #fbeaf0;
+  --color-brand-ink: #72243e;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

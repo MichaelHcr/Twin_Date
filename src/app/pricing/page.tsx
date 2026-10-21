@@ -9,7 +9,7 @@ import {
   type Tier,
 } from "@/lib/billing";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { CheckoutButton, ManageBillingButton } from "./plan-buttons";
+import { ChangePlanButton, CheckoutButton, ManageBillingButton } from "./plan-buttons";
 import { BackLink } from "@/components/back-link";
 
 export default function PricingPage({ searchParams }: PageProps<"/pricing">) {
@@ -56,6 +56,8 @@ async function PlansLoader({ searchParams }: Pick<PageProps<"/pricing">, "search
         text: "We couldn't confirm your payment yet. Refresh this page in a minute.",
       };
     }
+  } else if (params.changed) {
+    notice = { ok: true, text: "Your plan has been changed." };
   } else if (params.canceled) {
     notice = { ok: false, text: "Checkout was canceled. You haven't been charged." };
   }
@@ -124,7 +126,13 @@ async function PlansLoader({ searchParams }: Pick<PageProps<"/pricing">, "search
               <div className="mt-5 flex-1" />
               {isCurrent ? (
                 <p className="text-sm font-medium text-zinc-500">Your plan</p>
-              ) : tier === "free" ? null : subscription.stripe_subscription_id ? null : (
+              ) : tier === "free" ? null : subscription.stripe_subscription_id ? (
+                <ChangePlanButton
+                  tier={tier}
+                  label={`Switch to ${plan.name}`}
+                  upgrade={plan.priceCents > PLANS[current].priceCents}
+                />
+              ) : (
                 <CheckoutButton tier={tier} label={`Get ${plan.name}`} />
               )}
             </li>
@@ -135,7 +143,7 @@ async function PlansLoader({ searchParams }: Pick<PageProps<"/pricing">, "search
       {subscription.stripe_subscription_id && (
         <div className="mt-6">
           <ManageBillingButton />
-          <p className="mt-2 text-xs text-zinc-500">Cancel or update your card on Stripe&apos;s billing page.</p>
+          <p className="mt-2 text-xs text-zinc-500">Cancel, update your card or see invoices on Stripe&apos;s billing page.</p>
         </div>
       )}
 
