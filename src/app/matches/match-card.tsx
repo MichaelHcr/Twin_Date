@@ -8,8 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { CHIP_FLAG, CHIP_NEUTRAL } from "@/lib/ui";
 
 // What a match card shows: who (still anonymous), one short line from the
-// twins' report, the quote of theirs that matters most (its topic named and key
-// words highlighted), and a few tags. Used by the Matches grid.
+// twins' report, and a few tags. Used by the Matches grid.
 
 export type CardItem = { id: string; user_a: string; user_b: string };
 
@@ -21,16 +20,13 @@ export type CardData = {
   place: string;
   score: number;
   headline: string;
-  quote: { text: string; topic: string | null; highlight: string | null } | null;
   tags: Tag[];
 };
 
-type Evidence = { speaker: "a" | "b"; quote: string };
 type ReportRow = {
   conversation_id: string;
   score: number;
   summary: string;
-  evidence_json: Evidence[] | null;
   red_flags: string[] | null;
   questions_to_ask: string[] | null;
   // Per-reader versions of the report (main's migration 0010); older reports have none.
@@ -66,7 +62,7 @@ export async function loadMatchCards(supabase: SupabaseClient, userId: string, i
     // Row-level security returns only reports of this user's conversations.
     supabase
       .from("reports")
-      .select("conversation_id, score, summary, evidence_json, red_flags, questions_to_ask, views")
+      .select("conversation_id, score, summary, red_flags, questions_to_ask, views")
       .in("conversation_id", items.map((c) => c.id)),
     // Age, city and goal only.
     admin.from("profiles").select("user_id, birthdate, city, goal").in("user_id", otherIds),
@@ -86,16 +82,6 @@ export async function loadMatchCards(supabase: SupabaseClient, userId: string, i
     const profile = (profiles ?? []).find((p) => p.user_id === otherId);
     const card = cards[i];
 
-    // Their most telling quote: the card agent's pick, or else the Judge's first
-    // (the Judge lists the quotes that most support the score).
-    const evidence = report.evidence_json ?? [];
-    const pick = card?.best_quotes.find((q) => evidence[q.index]?.speaker && evidence[q.index].speaker !== mySide);
-    const fallback = evidence.find((e) => e.speaker !== mySide);
-    const quote = pick
-      ? { text: evidence[pick.index].quote, topic: pick.topic || null, highlight: pick.highlight || null }
-      : fallback
-        ? { text: fallback.quote, topic: null, highlight: null }
-        : null;
     // Without the card agent's headline: the Judge's headline written to this
     // reader ("you" and "this match"), or else a short cut of the summary.
     const view = report.views?.[mySide];
@@ -116,26 +102,10 @@ export async function loadMatchCards(supabase: SupabaseClient, userId: string, i
       place: [profile?.city, profile?.goal ? SHORT_GOALS[profile.goal] : null].filter(Boolean).join(" · "),
       score: report.score,
       headline: card?.headline ?? fallbackHeadline,
-      quote,
       tags,
     });
   });
   return result;
-}
-
-// The quote with its key words marked, so the point stands out at a glance.
-export function Highlighted({ text, part }: { text: string; part: string | null }) {
-  const at = part ? text.toLowerCase().indexOf(part.toLowerCase()) : -1;
-  if (!part || at < 0) return <span className="text-zinc-800 dark:text-zinc-200">{text}</span>;
-  return (
-    <>
-      {text.slice(0, at)}
-      <mark className="rounded bg-amber-100 px-0.5 font-medium text-black dark:bg-amber-900/60 dark:text-zinc-50">
-        {text.slice(at, at + part.length)}
-      </mark>
-      {text.slice(at + part.length)}
-    </>
-  );
 }
 
 export function TagChip({ tag }: { tag: Tag }) {
