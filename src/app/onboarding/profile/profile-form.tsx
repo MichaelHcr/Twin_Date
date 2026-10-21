@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
-import { GENDERS, GOALS, TOPICS, type Tier } from "@/lib/profile-topics";
+import { useActionState, useState } from "react";
+import { GENDERS, GOALS, OTHER, TOPICS, type Tier, type Topic } from "@/lib/profile-topics";
 import { saveProfile, type ProfileValues } from "./actions";
 
 export function ProfileForm({ initial }: { initial: ProfileValues }) {
@@ -73,39 +73,21 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
 
       <Section title="What matters to you">
         <p className="-mt-2 text-sm text-zinc-500">
-          Optional. Topics marked <TierBadge tier="locked" /> are facts your twin will never guess about.
+          Pick the closest answer, or choose Other to write your own. Topics marked{" "}
+          <TierBadge tier="locked" /> are facts your twin will never guess about.
         </p>
-        {TOPICS.map((topic) => {
-          const saved = v.topics[topic.key] ?? "";
-          return (
-            <Field
+        {TOPICS.map((topic) =>
+          topic.options ? (
+            <ChoiceQuestion key={topic.key} topic={topic} saved={v.topics[topic.key] ?? ""} />
+          ) : (
+            <FreeQuestion
               key={topic.key}
-              label={
-                <>
-                  {topic.question} <TierBadge tier={topic.tier} />
-                </>
-              }
-            >
-              {topic.options ? (
-                <select name={`topic_${topic.key}`} defaultValue={saved} className={inputClass}>
-                  <option value="">Skip for now</option>
-                  {/* The interviewer may have saved a free-text answer that isn't one of the options. */}
-                  {saved && !topic.options.includes(saved) && <option value={saved}>{saved}</option>}
-                  {topic.options.map((o) => (
-                    <option key={o} value={o}>{o}</option>
-                  ))}
-                </select>
-              ) : (
-                <textarea
-                  name={`topic_${topic.key}`}
-                  rows={topic.key === "dealbreakers" ? 3 : 2}
-                  defaultValue={saved}
-                  className={inputClass}
-                />
-              )}
-            </Field>
-          );
-        })}
+              topic={topic}
+              saved={v.topics[topic.key] ?? ""}
+              skipped={v.skipped.includes(topic.key)}
+            />
+          ),
+        )}
       </Section>
 
       <button
@@ -120,6 +102,86 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
 
 const inputClass =
   "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50";
+
+// Multiple choice with an "Other" write-in. A saved answer that isn't one of the
+// options (typed under Other, or from before the options existed) shows as Other.
+function ChoiceQuestion({ topic, saved }: { topic: Topic; saved: string }) {
+  const options = topic.options ?? [];
+  const savedIsOther = saved !== "" && !options.includes(saved);
+  const [choice, setChoice] = useState(savedIsOther ? OTHER : saved);
+  const name = `topic_${topic.key}`;
+  return (
+    <fieldset id={`topic-${topic.key}`} className="flex scroll-mt-24 flex-col gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+      <legend className="mb-2 font-medium">
+        {topic.question} <TierBadge tier={topic.tier} />
+      </legend>
+      <div className="flex flex-wrap gap-2">
+        {[...options, OTHER].map((o) => (
+          <label
+            key={o}
+            className={`cursor-pointer rounded-full border px-3 py-1.5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-zinc-400 ${
+              choice === o
+                ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                : "border-zinc-300 hover:border-zinc-500 dark:border-zinc-700"
+            }`}
+          >
+            <input
+              type="radio"
+              name={name}
+              value={o}
+              checked={choice === o}
+              onChange={() => setChoice(o)}
+              className="sr-only"
+            />
+            {o === OTHER ? "Other…" : o}
+          </label>
+        ))}
+      </div>
+      {choice === OTHER && (
+        <input
+          name={`${name}_other`}
+          required
+          autoFocus={!savedIsOther}
+          defaultValue={savedIsOther ? saved : ""}
+          placeholder="Your own answer"
+          aria-label={`${topic.label}: your own answer`}
+          className={inputClass}
+        />
+      )}
+    </fieldset>
+  );
+}
+
+// Free response, with a checkbox to skip it for now and come back later.
+function FreeQuestion({ topic, saved, skipped }: { topic: Topic; saved: string; skipped: boolean }) {
+  const [skip, setSkip] = useState(skipped && saved === "");
+  return (
+    <div id={`topic-${topic.key}`} className="flex scroll-mt-24 flex-col gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+      <label htmlFor={`topic_${topic.key}`}>
+        {topic.question} <TierBadge tier={topic.tier} />
+      </label>
+      <textarea
+        id={`topic_${topic.key}`}
+        name={`topic_${topic.key}`}
+        rows={3}
+        required={!skip}
+        disabled={skip}
+        defaultValue={saved}
+        placeholder={topic.placeholder}
+        className={`${inputClass} disabled:opacity-50`}
+      />
+      <label className="flex items-center gap-2 font-normal text-zinc-600 dark:text-zinc-400">
+        <input
+          type="checkbox"
+          name={`skip_${topic.key}`}
+          checked={skip}
+          onChange={(e) => setSkip(e.target.checked)}
+        />
+        Skip for now. You can answer this any time from your profile.
+      </label>
+    </div>
+  );
+}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { ageOf } from "@/lib/decisions";
 import { MAX_PHOTOS, signPhotoUrls } from "@/lib/photos";
 import { GOALS, TOPICS } from "@/lib/profile-topics";
+import { InterviewReview } from "./interview-review";
 import { ProfileForm } from "./profile-form";
 
 export default function ProfilePage() {
@@ -16,8 +17,8 @@ export default function ProfilePage() {
           Your profile
         </h1>
         <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-          Your twin uses this to represent you. Anything you skip, your twin&apos;s
-          interviewer will ask about.
+          Your twin uses exactly what you enter here to represent you. Your interview
+          only teaches it how you talk, and never changes these answers.
         </p>
         <Suspense fallback={<p className="mt-8 text-zinc-500">Loading…</p>}>
           <ProfileLoader />
@@ -50,6 +51,12 @@ async function ProfileLoader() {
         interviewDone={Boolean(p?.onboarding_complete)}
       />
 
+      <Suspense
+        fallback={<p className="mt-6 text-sm text-zinc-500">Comparing your interview with your profile…</p>}
+      >
+        <InterviewReview />
+      </Suspense>
+
       <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
         <h2 className="text-lg font-semibold text-black dark:text-zinc-50">Photos</h2>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
@@ -71,6 +78,8 @@ async function ProfileLoader() {
           radius_km: String(p?.radius_km ?? 50),
           goal: p?.goal ?? "",
           topics: Object.fromEntries(TOPICS.map((t) => [t.key, answers[t.key] ?? ""])),
+          // A free-response topic left empty after a save was skipped on purpose.
+          skipped: p?.display_name ? TOPICS.filter((t) => !t.options && !answers[t.key]).map((t) => t.key) : [],
         }}
       />
     </>

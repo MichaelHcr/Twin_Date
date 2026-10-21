@@ -4,11 +4,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { loadLatestPersona, type Persona } from "@/lib/agents/persona-builder";
 import { ageOn } from "@/lib/age";
-import { GOALS } from "@/lib/profile-topics";
+import { GOALS, TOPICS } from "@/lib/profile-topics";
 
 // The Twin agent (PRD: Agent architecture). It speaks as the user, in first
-// person, on a first chat with a match. Facts come from profile_answers with
-// their tiers; voice comes from the persona card's style profile.
+// person, on a first chat with a match. Facts come from profile_answers (the
+// form) with their tiers, plus interview_facts as soft or open extras; voice
+// comes from the persona card's style profile.
 // Used now for "Talk to your twin", and later for twin-to-twin conversations.
 
 const client = new Anthropic();
@@ -93,6 +94,10 @@ export async function loadTwinPrompt(
     supabase.from("profile_answers").select("topic, answer, tier").eq("user_id", userId),
     loadLatestPersona(supabase, userId),
   ]);
+  const { data: interviewFacts } = await supabase
+    .from("interview_facts")
+    .select("topic, answer, tier")
+    .eq("user_id", userId);
   if (!profile || !latest) return null;
 
   const goal = GOALS.find((g) => g.value === profile.goal)?.label ?? "not sure yet";
@@ -107,10 +112,20 @@ export async function loadTwinPrompt(
   return buildTwinSystemPrompt({
     name: alias ?? profile.display_name,
     basics,
-    answers: (answers ?? []) as Answer[],
+    answers: withInterviewFacts((answers ?? []) as Answer[], (interviewFacts ?? []) as Answer[]),
     persona: latest.persona,
     anonymous: Boolean(alias),
   });
+}
+
+// The form always wins: an interview fact is used only for a topic the form
+// doesn't answer, and never for a locked topic, since only the user's own form
+// answer can lock a fact.
+function withInterviewFacts(answers: Answer[], interviewFacts: Answer[]) {
+  const answered = new Set(answers.map((a) => a.topic));
+  const locked = new Set(TOPICS.filter((t) => t.tier === "locked").map((t) => t.key));
+  const extras = interviewFacts.filter((f) => !answered.has(f.topic) && !locked.has(f.topic));
+  return [...answers, ...extras];
 }
 
 export async function runTwinTurn(systemPrompt: string, messages: Anthropic.Beta.BetaMessageParam[]) {

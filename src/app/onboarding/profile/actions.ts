@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
-import { GENDERS, GOALS, TOPICS } from "@/lib/profile-topics";
+import { GENDERS, GOALS, OTHER, TOPICS } from "@/lib/profile-topics";
 
 export type ProfileValues = {
   display_name: string;
@@ -16,7 +16,10 @@ export type ProfileValues = {
   age_max: string;
   radius_km: string;
   goal: string;
+  // Final answer per topic: a chosen option, the "Other" text, or free text.
   topics: Record<string, string>;
+  // Free-response topics the user chose to skip for now.
+  skipped: string[];
 };
 
 export type SaveProfileState = { error: string; values: ProfileValues } | null;
@@ -57,8 +60,19 @@ function readValues(formData: FormData): ProfileValues {
     age_max: text("age_max"),
     radius_km: text("radius_km"),
     goal: text("goal"),
-    topics: Object.fromEntries(TOPICS.map((t) => [t.key, text(`topic_${t.key}`).trim()])),
+    topics: Object.fromEntries(
+      TOPICS.map((t) => {
+        const value = text(`topic_${t.key}`).trim();
+        return [t.key, value === OTHER ? text(`topic_${t.key}_other`).trim() : value];
+      }),
+    ),
+    skipped: TOPICS.filter((t) => !t.options && formData.get(`skip_${t.key}`) === "on").map((t) => t.key),
   };
+}
+
+// Every multiple-choice topic needs an answer; free-response ones need text or "skip for now".
+function missingTopic(values: ProfileValues) {
+  return TOPICS.find((t) => !values.topics[t.key] && !values.skipped.includes(t.key));
 }
 
 // On a validation error, returns the message plus everything the user typed,
@@ -75,6 +89,15 @@ export async function saveProfile(
   if (ageOn(parsed.data.birthdate) < 18) {
     return { error: "You must be 18 or older to use Twin Date.", values };
   }
+  const missing = missingTopic(values);
+  if (missing) {
+    return {
+      error: missing.options
+        ? `Please answer "${missing.question}" (pick "Other" to write your own).`
+        : `Please answer "${missing.question}", or tick "Skip for now".`,
+      values,
+    };
+  }
 
   const { error: profileError } = await supabase
     .from("profiles")
@@ -82,15 +105,24 @@ export async function saveProfile(
     .eq("user_id", user.id);
   if (profileError) return { error: profileError.message, values };
 
-  // Blank topics are skipped; the Interviewer will ask about them.
+  // The profile holds only what the user entered here; the interview's notes live
+  // in interview_facts. A skipped topic clears any earlier answer.
   const answers = TOPICS.flatMap((topic) => {
-    const answer = values.topics[topic.key];
+    const answer = values.skipped.includes(topic.key) ? "" : values.topics[topic.key];
     return answer ? [{ user_id: user.id, topic: topic.key, answer, tier: topic.tier }] : [];
   });
   if (answers.length > 0) {
     const { error } = await supabase
       .from("profile_answers")
       .upsert(answers, { onConflict: "user_id,topic" });
+    if (error) return { error: error.message, values };
+  }
+  if (values.skipped.length > 0) {
+    const { error } = await supabase
+      .from("profile_answers")
+      .delete()
+      .eq("user_id", user.id)
+      .in("topic", values.skipped);
     if (error) return { error: error.message, values };
   }
 
@@ -103,4 +135,16 @@ export async function saveProfile(
   // Drop the browser's cached copies of pages, so home and profile show the new data.
   revalidatePath("/", "layout");
   redirect(status?.onboarding_complete ? "/twin" : "/onboarding/interview");
+}
+
+// "My profile is right" on an interview conflict: hide that warning. The form
+// answer stays as it is, and a later check keeps it hidden.
+export async function dismissConflict(index: number) {
+  const { supabase, user } = await requireUser();
+  const { data } = await supabase.from("profile_checks").select("conflicts").eq("user_id", user.id).maybeSingle();
+  const conflicts = (data?.conflicts ?? []) as { dismissed?: boolean }[];
+  if (!conflicts[index]) return;
+  conflicts[index] = { ...conflicts[index], dismissed: true };
+  await supabase.from("profile_checks").update({ conflicts }).eq("user_id", user.id);
+  revalidatePath("/", "layout");
 }
