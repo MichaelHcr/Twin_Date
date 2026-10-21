@@ -28,12 +28,20 @@ async function AuthStatus() {
 
   if (!user) {
     return (
-      <Link
-        href="/login"
-        className="rounded-full bg-black px-5 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
-      >
-        Sign in or create an account
-      </Link>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <Link
+          href="/login?mode=signup"
+          className="rounded-full bg-black px-5 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+        >
+          Create an account
+        </Link>
+        <Link
+          href="/login"
+          className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-black dark:border-zinc-700 dark:text-zinc-50"
+        >
+          Sign in
+        </Link>
+      </div>
     );
   }
 
