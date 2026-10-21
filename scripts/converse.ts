@@ -1,4 +1,4 @@
-// Runs one twin-to-twin conversation and prints it as it happens (docs/HANDOFF.md, step 3).
+// Runs one twin-to-twin conversation and prints it as it happens.
 //
 //   npm run converse -- <userA> <userB>     user IDs or emails (e.g. seed+1@twindate.test)
 //   npm run converse -- --pair 3            a planted test pair from seed_pairs

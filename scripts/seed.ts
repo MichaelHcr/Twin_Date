@@ -1,4 +1,4 @@
-// Seeds the matching pool with synthetic users (docs/HANDOFF.md, step 2).
+// Seeds the matching pool with synthetic users.
 // Each Claude call designs one pair of users: either with a planted dealbreaker
 // conflict or genuinely compatible, for the PRD's evaluation. Pairs are saved to
 // the seed_pairs table so the Orchestrator and Judge can be scored on them.

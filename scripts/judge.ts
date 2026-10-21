@@ -1,4 +1,4 @@
-// Runs the Judge on finished conversations and prints the report (docs/HANDOFF.md, step 4).
+// Runs the Judge on finished conversations and prints the report.
 //
 //   npm run judge -- <conversationId>   judge one conversation (again, if it already has a report)
 //   npm run judge -- --all              judge every ended conversation that has no report yet
