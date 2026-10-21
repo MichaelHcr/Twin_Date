@@ -246,7 +246,6 @@ body.editing [contenteditable="true"] { outline: 2px dashed rgba(91,63,208,.35);
 <section class="slide active" aria-label="Twin Date">
   <div class="field f-violet" style="left:1050px;top:-120px;width:760px;height:620px"></div>
   <div class="field f-pink" style="left:1350px;top:560px;width:620px;height:560px"></div>
-  <p class="kicker reveal" style="position:absolute;left:128px;top:112px">Capstone · AI startup</p>
   <div class="chat" style="position:absolute;left:1080px;top:200px;width:700px">
     <p class="msg a reveal" style="--d:.3s"><span class="who">Your twin</span>Would you move for the right job?</p>
     <p class="msg b reveal" style="--d:.7s"><span class="who">Their twin</span>Maybe, but LA feels like home.</p>
@@ -264,39 +263,37 @@ body.editing [contenteditable="true"] { outline: 2px dashed rgba(91,63,208,.35);
 
 <!-- === 2. PROBLEM === -->
 <section class="slide" aria-label="The problem">
-  <div class="pad" style="display:flex;gap:96px">
-    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:36px">
+  <div class="pad" style="display:flex;flex-direction:column;justify-content:space-between;padding-bottom:40px">
+    <div style="display:flex;flex-direction:column;gap:28px">
       <p class="kicker love reveal">The problem</p>
-      <h2 class="h-l reveal" style="--d:.1s">The questions that matter come up <span class="accent">last</span>.</h2>
-      <p class="lead reveal" style="--d:.2s">Kids, money, moving. After weeks of small talk, or never.</p>
+      <h2 class="h-l reveal" style="--d:.1s">Dating apps make <span class="accent">you</span> do the screening.</h2>
     </div>
-    <div class="chat" style="width:620px;justify-content:center">
-      <p class="msg grey reveal" style="--d:.3s">hey!</p>
-      <p class="msg grey b reveal" style="--d:.45s;background:#ece6dc">how was your weekend?</p>
-      <p class="msg grey reveal" style="--d:.6s">haha same</p>
-      <p class="small reveal" style="--d:.8s;align-self:center">· · · two weeks later · · ·</p>
-      <p class="msg bad b reveal" style="--d:1.1s;background:var(--flag-soft)">wait, you’re moving to Seattle?</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:28px">
+      <div class="card reveal" style="--d:.2s;display:flex;flex-direction:column;gap:20px;padding:56px 44px"><span class="num" style="color:var(--love)">01</span><p style="font-size:46px;font-weight:600;line-height:1.15">Screening takes hours</p><p class="small">Many chats before you know if it fits.</p></div>
+      <div class="card reveal" style="--d:.35s;display:flex;flex-direction:column;gap:20px;padding:56px 44px"><span class="num" style="color:var(--love)">02</span><p style="font-size:46px;font-weight:600;line-height:1.15">Profiles miss real fit</p><p class="small">Photos and age say little about values or plans.</p></div>
+      <div class="card reveal" style="--d:.5s;display:flex;flex-direction:column;gap:20px;padding:56px 44px"><span class="num" style="color:var(--love)">03</span><p style="font-size:46px;font-weight:600;line-height:1.15">Too many choices</p><p class="small">Endless swiping wears people out.</p></div>
     </div>
+    <div></div>
   </div>
-  <!-- SCRIPT (Speaker 1, 40s): On dating apps, the questions that decide a match come up last. Do you want kids, how do you handle money, would you move? You spend weeks on small talk first, or you never ask. Filters like age and distance can't tell you how someone talks or what they'd compromise on. Our user is an adult looking for something serious who's tired of swiping. -->
+  <!-- SCRIPT (Speaker 1, 45s): Dating apps make you do the screening yourself, and that causes three problems. First, it takes hours: you chat with many people before you know if it fits. Second, profiles miss real fit: photos, age and interests say little about values, lifestyle or long-term plans, like kids, money or moving. Third, too many choices: endless swiping and evaluating wears people out. Our user is an adult looking for something serious who's tired of all that. -->
 </section>
 
-<!-- === 3. SOLUTION === -->
+<!-- === 3. OUR SOLUTION === -->
 <section class="slide" aria-label="Our solution">
-  <div class="field f-violet" style="left:-200px;top:600px;width:700px;height:600px;opacity:.35"></div>
-  <div class="pad" style="display:flex;flex-direction:column;justify-content:space-between">
+  <div class="field f-violet" style="left:1300px;top:-160px;width:760px;height:620px;opacity:.4"></div>
+  <div class="pad" style="display:flex;flex-direction:column;justify-content:space-between;padding-bottom:40px">
     <div style="display:flex;flex-direction:column;gap:28px">
       <p class="kicker reveal">Our solution</p>
-      <h2 class="h-l reveal" style="--d:.1s">Let your twin go first.</h2>
+      <h2 class="h-l reveal" style="--d:.1s">An AI twin does the first round.</h2>
     </div>
-    <div style="display:flex;align-items:stretch;gap:28px">
-      <div class="card reveal" style="--d:.2s;flex:1;display:flex;flex-direction:column;gap:20px;padding:56px 44px"><span class="num">01</span><p style="font-size:48px;font-weight:600">Twins chat</p><p class="small">Up to 20 turns. Stop at a dealbreaker.</p></div>
-      <div class="card reveal" style="--d:.35s;flex:1;display:flex;flex-direction:column;gap:20px;padding:56px 44px"><span class="num">02</span><p style="font-size:48px;font-weight:600">You get a report</p><p class="small">Score, pros, cons, what to ask.</p></div>
-      <div class="card reveal" style="--d:.5s;flex:1;display:flex;flex-direction:column;gap:20px;padding:56px 44px;background:var(--love-soft);border-color:#f9c6d8"><span class="num" style="color:var(--love)">03</span><p style="font-size:48px;font-weight:600">People take over</p><p class="small" style="color:#9d174d">Every real message is yours.</p></div>
+    <div style="display:flex;flex-direction:column;gap:22px">
+      <div class="lane reveal" style="--d:.2s"><div class="node" style="flex:.8;background:#ece6dc;color:var(--muted)">Hours of chats</div><i class="arrow"></i><div class="node ai" style="flex:1.6">Twins chat first, and stop at a dealbreaker</div></div>
+      <div class="lane reveal" style="--d:.35s"><div class="node" style="flex:.8;background:#ece6dc;color:var(--muted)">Shallow profiles</div><i class="arrow"></i><div class="node ai" style="flex:1.6">An interview, then twins talk values and plans</div></div>
+      <div class="lane reveal" style="--d:.5s"><div class="node" style="flex:.8;background:#ece6dc;color:var(--muted)">Too many choices</div><i class="arrow"></i><div class="node human" style="flex:1.6">A short, ranked list, each with a report</div></div>
     </div>
-    <p class="lead reveal" style="--d:.65s"><b style="color:var(--ink);font-weight:600">Why AI:</b> a first chat needs follow-ups and judgment, not a filter.</p>
+    <p class="lead reveal" style="--d:.65s"><b style="color:var(--ink);font-weight:600">Why AI:</b> Fit shows up in conversation, not checkboxes. AI can have that first conversation for you.</p>
   </div>
-  <!-- SCRIPT (Speaker 1, 30s): Twin Date gives everyone an AI twin built from their profile and an interview. Your twin chats with other people's twins and stops at a dealbreaker. You get a private report. If you both say yes, the twins step back and every real message is written by you. AI is the right tool because a first chat is open-ended: it needs follow-up questions and judgment. Now [Speaker 2] will show you. -->
+  <!-- SCRIPT (Speaker 1, 35s): So we give everyone an AI twin, built from their profile and a short interview, and the twin does the first round. Instead of hours of chats, twins talk to each other first and stop at a dealbreaker. Instead of shallow profiles, they go deeper, into values and plans. And instead of endless choices, you get a short, ranked list, each with a report. Why AI? Fit shows up in conversation, not in checkboxes, and AI can have that first conversation for you. Over to [Speaker 2] for the demo. -->
 </section>
 
 <!-- === 4. DEMO === -->
@@ -322,7 +319,7 @@ body.editing [contenteditable="true"] { outline: 2px dashed rgba(91,63,208,.35);
   (40s) Find my next match: the Scout filters by gender, age, goal and city, then Claude ranks the rest. Two twins are chatting right now; they cover money, lifestyle and where to live, and push back when something conflicts.
   (30s) The Judge writes the report to me: a score, pros and cons, questions to ask. My Yes or Pass is private.
   (30s) When we both say yes, names and photos unlock. The chat opens with our twins' conversation folded on top; everything below is written by us.
-  (30s) Plans: Free gives 3 twin chats a week. I upgrade to Plus with Stripe's test card 4242, and my quota goes to 15. Over to [Speaker 3]. -->
+  (30s) Plans: Free gives 3 twin chats a week. I upgrade to Plus with Stripe's test card 4242, and my quota goes to 15. Over to [Speaker 3] for how it works. -->
 </section>
 
 <!-- === 5. ARCHITECTURE === -->
@@ -356,98 +353,116 @@ body.editing [contenteditable="true"] { outline: 2px dashed rgba(91,63,208,.35);
       </div>
     </div>
   </div>
-  <div class="foot"><span><i class="dot" style="background:var(--twin)"></i> Claude agent &#160;&#160; <i class="dot" style="background:var(--love)"></i> a person &#160;&#160; <i class="dot" style="background:var(--ink)"></i> plain code</span><span>State in Supabase Postgres</span></div>
-  <!-- SCRIPT (Speaker 3, 45s): Seven agents, all on Claude. To build your twin, the Interviewer, a ReAct agent with tools, fills gaps in your profile, and the Persona Builder writes your twin. To screen, the Scout filters and ranks. Then an Orchestrator, plain code rather than an LLM, runs two twin agents turn by turn, each with tools to take private notes, flag a red flag or end the chat. The Judge scores it and the Match card agent writes the headline. When a real chat goes quiet, the Chat topics agent suggests something the twins talked about. Agents prepare; people make every decision. -->
+  <div class="foot"><span><i class="dot" style="background:var(--twin)"></i> Claude agent &#160;&#160; <i class="dot" style="background:var(--love)"></i> a person &#160;&#160; <i class="dot" style="background:var(--ink)"></i> plain code</span><span>Next.js on Vercel · Supabase · Claude · Stripe</span></div>
+  <!-- SCRIPT (Speaker 3, 45s): Under the hood: a Next.js app on Vercel, Supabase for data and sign-in, and seven agents on Claude. To build your twin, the Interviewer, a ReAct agent with tools, fills gaps in your profile, and the Persona Builder writes your twin. To screen, the Scout filters and ranks. An Orchestrator, plain code rather than an LLM, runs two twin agents turn by turn and stops every chat by turn 20, each with tools to take private notes, flag a red flag or end the chat. The Judge scores it and the Match card agent writes the headline. When a real chat goes quiet, the Chat topics agent suggests a topic. Agents prepare; people decide. -->
 </section>
 
-<!-- === 6. GUARDRAILS === -->
-<section class="slide" aria-label="Rules in code">
+<!-- === 6. AI DESIGN === -->
+<section class="slide" aria-label="AI design">
   <div class="pad" style="display:flex;flex-direction:column;justify-content:space-between;padding-bottom:40px">
     <div style="display:flex;flex-direction:column;gap:28px">
       <p class="kicker reveal">AI design</p>
-      <h2 class="h-l reveal" style="--d:.1s">Rules live in code, not prompts.</h2>
+      <h2 class="h-l reveal" style="--d:.1s">The model talks. <span class="violet">Code sets the rules.</span></h2>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px">
-      <div class="card reveal" style="--d:.2s;display:flex;flex-direction:column;gap:22px;padding:52px 44px;min-height:300px"><span class="dot" style="background:var(--flag)"></span><p style="font-size:40px;font-weight:600;line-height:1.2">Red flags only on your locked topics</p></div>
-      <div class="card reveal" style="--d:.3s;display:flex;flex-direction:column;gap:22px;padding:52px 44px;min-height:300px"><span class="dot" style="background:var(--twin)"></span><p style="font-size:40px;font-weight:600;line-height:1.2">20-turn cap, no quitting before turn 6</p></div>
-      <div class="card reveal" style="--d:.4s;display:flex;flex-direction:column;gap:22px;padding:52px 44px;min-height:300px"><span class="dot" style="background:var(--love)"></span><p style="font-size:40px;font-weight:600;line-height:1.2">Score ≤ 20 after a dealbreaker</p></div>
-      <div class="card reveal" style="--d:.5s;display:flex;flex-direction:column;gap:22px;padding:52px 44px;min-height:300px"><span class="dot" style="background:var(--ink)"></span><p style="font-size:40px;font-weight:600;line-height:1.2">Twins never see names or photos</p></div>
+    <div style="display:grid;grid-template-columns:720px 1fr;gap:56px;align-items:center">
+      <div class="chat">
+        <p class="msg b reveal" style="--d:.2s;max-width:620px"><span class="who">Their twin · turn 7</span>I’m moving to Seattle next spring.</p>
+        <p class="msg a reveal" style="--d:.4s;max-width:620px;background:var(--flag-soft);color:#7c2d12"><span class="who">Your twin · turn 8</span>Then it’s a dealbreaker. I’m staying in LA.</p>
+        <div class="reveal-scale" style="--d:.6s;display:flex;align-items:center;gap:18px">
+          <div class="ring" style="width:84px;height:84px;background:conic-gradient(var(--flag) 0 18%,#f1e7da 0)"><span style="width:62px;height:62px;font-size:24px">18</span></div>
+          <span style="font-size:30px;font-weight:600;color:var(--flag)">Dealbreaker: relocation</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:22px">
+        <div class="card reveal" style="--d:.5s;padding:26px 34px;border-left:6px solid var(--twin)"><p class="small" style="font-weight:600;color:var(--twin)">Twin’s facts</p><p style="font-size:30px;font-weight:600;margin-top:4px">Locked: never guessed</p><p class="small" style="margin-top:4px">Soft: hedged · Open: may improvise</p></div>
+        <div class="card reveal" style="--d:.65s;padding:26px 34px;border-left:6px solid var(--flag)"><p class="small" style="font-weight:600;color:var(--flag)">Twin’s tool</p><p style="font-size:30px;font-weight:600;margin-top:4px">Red flag only on a locked answer</p></div>
+        <div class="card reveal" style="--d:.8s;padding:26px 34px;border-left:6px solid var(--love)"><p class="small" style="font-weight:600;color:var(--love)">Judge</p><p style="font-size:30px;font-weight:600;margin-top:4px">Score capped at 20 after a dealbreaker</p></div>
+      </div>
     </div>
-    <div class="reveal" style="--d:.65s;display:flex;align-items:center;gap:18px;flex-wrap:wrap">
-      <span class="small" style="font-weight:600;color:var(--ink)">When things fail:</span>
-      <span class="chip">Readable error + Retry</span>
-      <span class="chip">Model fallback</span>
-      <span class="chip">A dropped turn resumes</span>
+    <div class="reveal" style="--d:.95s;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <span class="small" style="font-weight:600;color:var(--ink)">When things go wrong:</span>
+      <span class="chip">Model refuses → fallback model</span>
+      <span class="chip">API error → message + Retry</span>
+      <span class="chip">Page closed → chat resumes</span>
     </div>
   </div>
-  <!-- SCRIPT (Speaker 3, 35s): The important rules live in code, so a clever prompt can't talk around them. A twin can only flag a red flag on one of its own locked answers; the tool refuses otherwise. The Orchestrator caps chats at 20 turns, and the Judge's score is capped at 20 after a dealbreaker. Twins never see names or photos, so one twin can't pull contact details from the other. When something fails, users see a readable message with Retry, a refused request falls back to another model, and since each turn is saved, a chat picks up where it left off. Now [Speaker 4] on shipping it. -->
+  <!-- SCRIPT (Speaker 3, 40s): For the AI design, our rule is: the model talks, but code sets the rules. Here their twin says they're moving to Seattle, and my twin calls it a dealbreaker. Three pieces of code make that safe. First, every fact about me has a tier: locked facts, like where I'll live, are never guessed; soft facts can be hedged; open ones the twin may improvise. Second, the red-flag tool only works on one of my locked answers, so a twin can't invent a dealbreaker. Third, the Judge caps the score at 20 after a dealbreaker, so it can't still look like a great match. Twins also never see names or photos. When things go wrong: if the model refuses, we fall back to another model; an API error shows a readable message with Retry; and if you close the page, the chat resumes from the last saved turn. Over to [Speaker 4]. -->
 </section>
 
-<!-- === 7. PRODUCTION === -->
-<section class="slide" aria-label="Production">
+<!-- === 7. REFLECTION AND BUSINESS MODEL === -->
+<section class="slide" aria-label="Reflection">
   <div class="pad" style="display:flex;flex-direction:column;justify-content:space-between;padding-bottom:40px">
     <div style="display:flex;flex-direction:column;gap:28px">
-      <p class="kicker reveal">Production</p>
-      <h2 class="h-l reveal" style="--d:.1s">Live, private, ready to charge.</h2>
+      <p class="kicker love reveal">Reflection</p>
+      <h2 class="h-l reveal" style="--d:.1s">We priced it before we costed it.</h2>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px">
-      <div class="card reveal" style="--d:.2s;padding:60px 44px"><p style="font-size:52px;font-weight:700">Next.js</p><p class="small" style="margin-top:10px">on Vercel</p></div>
-      <div class="card reveal" style="--d:.3s;padding:60px 44px"><p style="font-size:52px;font-weight:700">Supabase</p><p class="small" style="margin-top:10px">Auth, data, realtime</p></div>
-      <div class="card reveal" style="--d:.4s;background:var(--twin-soft);border-color:#d9cffc"><p style="font-size:40px;font-weight:700;color:#2b1f6b">Claude</p><p class="small" style="margin-top:10px">7 agents</p></div>
-      <div class="card reveal" style="--d:.5s;padding:60px 44px"><p style="font-size:52px;font-weight:700">Stripe</p><p class="small" style="margin-top:10px">Test mode</p></div>
-    </div>
-    <div class="reveal" style="--d:.65s;display:flex;gap:16px;flex-wrap:wrap">
-      <span class="chip"><i class="dot" style="background:var(--twin)"></i>Keys stay on the server</span>
-      <span class="chip"><i class="dot" style="background:var(--twin)"></i>Row-level security everywhere</span>
-      <span class="chip"><i class="dot" style="background:var(--twin)"></i>Signed Stripe webhook</span>
-      <span class="chip"><i class="dot" style="background:var(--love)"></i>A Pass is never shown</span>
-    </div>
-  </div>
-  <!-- SCRIPT (Speaker 4, 35s): It's live at twin-date.vercel.app: Next.js on Vercel, Supabase for sign-in, data, photos and realtime chat, Claude for the agents, and Stripe for payments. API keys stay on the server. Every table has row-level security, so you only read your own data. Only a signed Stripe webhook can set your plan, so nobody can upgrade themselves. And privacy is the default: a Pass is never shown, and photos unlock only after a mutual yes. -->
-</section>
-
-<!-- === 8. PLANS === -->
-<section class="slide" aria-label="Business model">
-  <div class="pad" style="display:flex;flex-direction:column;justify-content:center;gap:110px;padding-bottom:40px">
-    <div style="display:flex;flex-direction:column;gap:28px">
-      <p class="kicker love reveal">Business model</p>
-      <h2 class="h-l reveal" style="--d:.1s">Pay for how many people your twin meets.</h2>
-    </div>
-    <div style="display:flex;gap:28px;align-items:flex-end">
-      <div class="card reveal" style="--d:.2s;flex:1"><p style="font-size:32px;font-weight:600">Free</p><p style="font-size:96px;font-weight:700;letter-spacing:-.03em;margin-top:8px">$0</p><p class="small" style="margin-top:8px">3 twin chats / week</p></div>
-      <div class="card reveal" style="--d:.35s;flex:1;background:var(--ink);border-color:var(--ink);color:#f6f1e9;padding:56px 44px"><p style="font-size:32px;font-weight:600;color:#f9a8d4">Plus</p><p style="font-size:96px;font-weight:700;letter-spacing:-.03em;margin-top:8px">$9.99</p><p class="small" style="margin-top:8px;color:#c9c3d1">15 twin chats / week</p></div>
-      <div class="card reveal" style="--d:.5s;flex:1"><p style="font-size:32px;font-weight:600">Pro</p><p style="font-size:96px;font-weight:700;letter-spacing:-.03em;margin-top:8px">$24.99</p><p class="small" style="margin-top:8px">40 twin chats / week</p></div>
-    </div>
-  </div>
-  <div class="foot"><span>Per month · Stripe test mode, no real charges</span><span>Hinge / Tinder entry plans: ~$15–17 a month</span></div>
-  <!-- SCRIPT (Speaker 4, 25s): Plans are priced by how many people your twin screens each week: 3 on Free, 15 on Plus for $9.99, 40 on Pro for $24.99, under the roughly $15 to $17 entry plans on Hinge or Tinder. Upgrades go through Stripe Checkout, you can switch between Plus and Pro with prorated billing, and cancel in Stripe's portal. -->
-</section>
-
-<!-- === 9. LESSONS AND NEXT === -->
-<section class="slide" aria-label="Lessons and next steps">
-  <div class="pad" style="display:flex;flex-direction:column;justify-content:center;gap:110px;padding-bottom:40px">
-    <div style="display:flex;flex-direction:column;gap:28px">
-      <p class="kicker reveal">Looking back, looking ahead</p>
-      <h2 class="h-l reveal" style="--d:.1s">What we learned.</h2>
-    </div>
-    <div style="display:flex;gap:64px">
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:40px">
-        <p class="reveal" style="--d:.2s;font-size:52px;font-weight:600">Prompts aren’t rules.</p>
-        <p class="reveal" style="--d:.3s;font-size:52px;font-weight:600">Agents outlast a web request.</p>
-        <p class="reveal" style="--d:.4s;font-size:52px;font-weight:600">Privacy is a product choice.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:stretch">
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <p class="kicker reveal" style="--d:.2s;color:var(--muted)">Our subscription</p>
+        <div class="card reveal" style="--d:.25s;display:flex;justify-content:space-between;align-items:baseline;padding:28px 40px"><p style="font-size:34px;font-weight:600">Free</p><p style="font-size:30px"><b>$0</b> <span class="small">· 3 twin chats / wk</span></p></div>
+        <div class="card reveal" style="--d:.35s;display:flex;justify-content:space-between;align-items:baseline;padding:28px 40px;background:var(--ink);border-color:var(--ink);color:#f6f1e9"><p style="font-size:34px;font-weight:600;color:#f9a8d4">Plus</p><p style="font-size:30px"><b>$9.99</b> <span class="small" style="color:#c9c3d1">· 15 / wk</span></p></div>
+        <div class="card reveal" style="--d:.45s;display:flex;justify-content:space-between;align-items:baseline;padding:28px 40px"><p style="font-size:34px;font-weight:600">Pro</p><p style="font-size:30px"><b>$24.99</b> <span class="small">· 40 / wk</span></p></div>
+        <p class="small reveal" style="--d:.5s">Set against competitors: Hinge+ and Tinder Plus start around $15–17 a month.</p>
       </div>
-      <div class="card reveal" style="--d:.5s;flex:1;display:flex;flex-direction:column;gap:22px;background:var(--twin-soft);border-color:#d9cffc">
-        <p class="kicker">Next</p>
-        <p style="font-size:34px;font-weight:600;color:#2b1f6b">Twin asks you what it doesn’t know</p>
-        <p style="font-size:34px;font-weight:600;color:#2b1f6b">Measure red-flag recall and cost per chat</p>
-        <p style="font-size:34px;font-weight:600;color:#2b1f6b">Background jobs, delete my data, block</p>
+      <div class="card reveal" style="--d:.55s;display:flex;flex-direction:column;justify-content:center;gap:30px;padding:56px 52px;background:var(--love-soft);border-color:#f9c6d8">
+        <p class="kicker love">What we skipped</p>
+        <p style="font-size:48px;font-weight:700;line-height:1.15;color:#831843">Cost per twin chat</p>
+        <p style="font-size:30px;line-height:1.35;color:#9d174d">Never measured. So we don’t know if Plus makes money.</p>
+        <p style="font-size:30px;font-weight:600;color:#831843">Next time: cost first, then price.</p>
       </div>
     </div>
+    <div></div>
   </div>
-  <!-- SCRIPT (Speaker 4, 35s): Three lessons. Prompts aren't rules: [confirm with the team: twins were too agreeable until the rules moved into tool code]. Agents outlast a web request, so we run one turn per request and keep all state in the database. And privacy is a product choice: keeping a Pass private and the real chat human-only shaped the whole design. Next: the twin asks you what it doesn't know, we measure red-flag recall on our planted test pairs and the cost per chat, and add background jobs, delete-my-data and blocking. -->
+  <!-- SCRIPT (Speaker 4, 45s): Our biggest lesson is about the business. We built a simple subscription: Free with 3 twin chats a week, Plus at $9.99 for 15, and Pro at $24.99 for 40. We set those prices by looking at competitors: Hinge+ and Tinder Plus start around $15 to $17 a month. What we didn't calculate is our own cost. Every twin chat is about 20 AI calls plus a report, and we never logged what that costs. So we can't say whether a Plus user, who can run up to about 65 chats a month, costs us more than the $9.99 they pay. Next time, we'd measure the cost per chat first, then set prices and quotas from it. -->
 </section>
 
-<!-- === 10. THANK YOU === -->
+<!-- === 8. FUTURE IMPROVEMENTS === -->
+<section class="slide" aria-label="Future improvements">
+  <div class="pad" style="display:flex;flex-direction:column;justify-content:space-between;padding-bottom:40px">
+    <div style="display:flex;flex-direction:column;gap:28px">
+      <p class="kicker reveal">What’s next</p>
+      <h2 class="h-l reveal" style="--d:.1s">Future improvements.</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
+      <!-- feature 1: a twin that learns you -->
+      <div class="card reveal" style="--d:.2s;display:flex;flex-direction:column;gap:30px;padding:48px 52px;background:var(--twin-soft);border-color:#d9cffc">
+        <p style="font-size:44px;font-weight:600;line-height:1.15;color:#2b1f6b">A twin that learns you</p>
+        <div style="display:flex;align-items:center;gap:28px">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <p style="font-size:22px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">Today</p>
+            <div style="display:flex;gap:10px"><span class="chip" style="font-size:24px;padding:10px 20px">Profile</span><span class="chip" style="font-size:24px;padding:10px 20px">Interview</span></div>
+            <p style="font-size:22px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--twin);margin-top:10px">Next</p>
+            <div style="display:flex;gap:10px"><span class="chip" style="font-size:24px;padding:10px 20px;border:2px dashed var(--twin);color:var(--twin)">Real chats</span><span class="chip" style="font-size:24px;padding:10px 20px;border:2px dashed var(--twin);color:var(--twin)">Connected apps</span></div>
+          </div>
+          <i class="arrow" style="width:56px"></i>
+          <div class="ring" style="width:132px;height:132px;flex:none;background:var(--twin);color:#fff;font-size:28px;font-weight:700">Twin</div>
+        </div>
+      </div>
+      <!-- feature 2: a dating copilot -->
+      <div class="card reveal" style="--d:.35s;display:flex;flex-direction:column;gap:30px;padding:48px 52px;background:var(--twin-soft);border-color:#d9cffc">
+        <p style="font-size:44px;font-weight:600;line-height:1.15;color:#2b1f6b">A dating copilot</p>
+        <div style="display:flex;flex-direction:column;gap:14px;background:var(--card);border-radius:26px;padding:24px">
+          <p class="msg b" style="font-size:26px;padding:14px 22px;max-width:420px">Just got back from Japan!</p>
+          <p style="align-self:flex-start;font-size:24px;font-weight:600;color:var(--twin);background:var(--twin-soft);border:2px dashed var(--twin);border-radius:999px;padding:10px 20px">✦ Ask: favorite city there?</p>
+          <div style="height:48px;border-radius:999px;background:var(--paper);border:1px solid var(--line)"></div>
+        </div>
+      </div>
+    </div>
+    <!-- not a feature: the groundwork underneath -->
+    <div class="reveal" style="--d:.5s;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:28px">
+      <span class="small" style="font-weight:600;color:var(--ink)">Groundwork:</span>
+      <span class="chip">Measure red-flag recall</span>
+      <span class="chip">Cost per chat</span>
+      <span class="chip">Block and report</span>
+      <span class="chip">Delete my data</span>
+    </div>
+  </div>
+  <!-- SCRIPT (Speaker 4, 30s): Looking ahead, two features and one foundation. First, a twin that learns you. Today it only knows your profile and interview. It could also learn from how you actually text in your real chats, or from other apps you choose to connect, and pick up what a short self-description misses. Second, a dating copilot: today we suggest a topic when a chat goes quiet; the copilot would suggest topics live, while you chat, and you'd still send every message yourself. And underneath, some groundwork that isn't a feature but matters: measuring red-flag recall on our planted test pairs and the cost per chat, plus block, report and delete my data. -->
+</section>
+
+<!-- === 9. THANK YOU === -->
+
+
 <section class="slide" aria-label="Thank you">
   <div class="field f-violet" style="left:1050px;top:-120px;width:760px;height:620px"></div>
   <div class="field f-pink" style="left:1350px;top:560px;width:620px;height:560px"></div>
