@@ -2,7 +2,7 @@
 
 **Your AI twin goes on the first chat for you, then hands you back the people worth meeting.**
 
-Live at **https://twin-date.vercel.app** · Demo-day slides and script in [`docs/presentation`](docs/presentation)
+Live at **https://twin-date.vercel.app** · [PRD](docs/PRD.md) · [Write-up](docs/WRITEUP.md) ([PDF](docs/Twin_Date_Writeup.pdf)) · Demo-day slides and script in [`docs/presentation`](docs/presentation)
 
 On dating apps, the questions that decide a match (kids, money, where to live) come up last,
 after weeks of small talk. Twin Date gives every user an AI twin built from their profile and
@@ -221,6 +221,7 @@ src/
   components/        Shared UI
 supabase/migrations/ Database schema, row-level security and storage, in order
 scripts/             Seed users, run and judge conversations, debug matching
+docs/                PRD, project write-up (Markdown and PDF)
 docs/presentation/   Demo-day slides and speaker script
 ```
 

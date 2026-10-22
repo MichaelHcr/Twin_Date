@@ -4,7 +4,7 @@ AI dating app class project, due **Thu 2026-10-22**, team of 4. Each user gets a
 (built from a profile form + an onboarding interview) that has first chats with other
 users' twins; users get a ranked shortlist of transcripts and reports.
 
-- PRD (source of truth for scope): https://claude.ai/code/artifact/8ce785e9-b94b-461c-95a3-4070eb5cda3a
+- PRD (source of truth for scope): [docs/PRD.md](docs/PRD.md)
 - Overview, setup and scripts: [README.md](README.md).
 - Live site: https://twin-date.vercel.app (deploys from `main`)
 - Course requirements: React, multiple agents (ReAct), authentication, payments, publicly deployed.
