@@ -137,7 +137,7 @@ export function LoginForm() {
                     type="checkbox"
                     checked={isAdult}
                     onChange={(e) => setIsAdult(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 accent-black dark:accent-white"
+                    className="mt-0.5 h-4 w-4 accent-violet-600"
                   />
                   I confirm I am 18 or older.
                 </label>
