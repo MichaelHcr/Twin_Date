@@ -6,8 +6,8 @@
 }
 
 /* One look for the whole site, from the demo deck and the landing page:
-   greys are soft lilac (paper, card) with a deep ink, violet is what the AI twins do and pink is
-   liking. Retuning Tailwind's own scales here restyles every page at once, so
+   soft lilac greys with a deep ink, violet for what the AI twins do and pink
+   for liking. Retuning Tailwind's own scales here restyles every page at once, so
    components keep using zinc, black, white, violet and pink classes. */
 @theme {
   --color-white: #fffdfe;
@@ -62,8 +62,8 @@
   }
 }
 
-/* The signed-out landing page, in the demo deck's palette
-   (docs/presentation/twin-date-slides.html): warm paper, violet for what the
+/* The signed-out landing page, in the site palette, after the demo deck
+   (docs/presentation/twin-date-slides.html): lilac paper, violet for what the
    AI twins do, pink for liking and matches. */
 .landing {
   --paper: #f8f5fa;
