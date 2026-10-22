@@ -5,7 +5,7 @@ import { Chat } from "./chat";
 
 export default function InterviewPage() {
   return (
-    <main className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 font-sans dark:bg-black">
+    <main className="flex flex-1 justify-center px-4 py-12 font-sans">
       <div className="flex w-full max-w-xl flex-col">
         <p className="text-sm text-zinc-500">Step 2 of 2</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">

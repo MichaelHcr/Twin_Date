@@ -94,8 +94,19 @@
   }
 }
 
+/* Behind every page: a light wash from pink (liking) to violet (the twins).
+   Pages leave their own background transparent so it shows through. */
 body {
-  background: var(--background);
+  background: var(--background) fixed;
+  background-image: linear-gradient(160deg, #fdeef5 0%, #f7f0fa 45%, #ede8fd 100%);
+}
+@media (prefers-color-scheme: dark) {
+  body {
+    background-image: linear-gradient(160deg, #241a26 0%, #1e1a28 50%, #1c1830 100%);
+  }
+}
+
+body {
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
 }

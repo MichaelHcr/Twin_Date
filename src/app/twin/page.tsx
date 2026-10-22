@@ -7,7 +7,7 @@ import { BackLink } from "@/components/back-link";
 
 export default function TwinPage() {
   return (
-    <main className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 font-sans dark:bg-black">
+    <main className="flex flex-1 justify-center px-4 py-12 font-sans">
       <div className="flex w-full max-w-xl flex-col">
         <BackLink href="/">Home</BackLink>
         <h1 className="mt-5 text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">

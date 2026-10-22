@@ -17,7 +17,7 @@ const SOLUTIONS = [
 
 export function Landing() {
   return (
-    <main className="landing flex-1 overflow-hidden bg-(--paper) font-sans text-(--ink)">
+    <main className="landing flex-1 overflow-hidden font-sans text-(--ink)">
       <Hero />
       <Problem />
       <Solution />

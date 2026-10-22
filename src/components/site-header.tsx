@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 // loading state; SiteHeader fills in the nav and the account menu.
 export function HeaderShell({ children }: { children?: React.ReactNode }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-zinc-200 bg-zinc-50/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
+    <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/60 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/70">
       <div className="mx-auto flex min-h-16 w-full max-w-3xl flex-wrap items-center gap-x-2 px-4 font-sans">
         {/* On phones the nav drops to its own row under the logo and avatar. */}
         <Link href="/" className="mr-3 flex h-16 items-center text-lg font-semibold tracking-tight text-black dark:text-zinc-50">

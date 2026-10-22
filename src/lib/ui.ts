@@ -8,7 +8,7 @@
 //   violet        what the AI twins found or wrote
 
 // Page background and column.
-export const PAGE = "flex flex-1 justify-center bg-zinc-50 px-4 py-8 font-sans dark:bg-black";
+export const PAGE = "flex flex-1 justify-center px-4 py-8 font-sans";
 export const COLUMN = "flex w-full max-w-xl flex-col";
 
 // A screen-sized white card, and a quiet grey panel inside one.

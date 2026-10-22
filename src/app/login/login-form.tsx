@@ -76,7 +76,7 @@ export function LoginForm() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-zinc-50 px-4 py-16 font-sans dark:bg-black">
+    <main className="flex flex-1 items-center justify-center px-4 py-16 font-sans">
       <div className={`${CARD} w-full max-w-sm p-6 sm:p-8`}>
         <div role="tablist" className="grid grid-cols-2 rounded-full bg-zinc-100 p-1 dark:bg-zinc-900">
           {(["signin", "signup"] as const).map((m) => (

@@ -23,7 +23,7 @@ async function HomeContent() {
   if (!user) return <Landing />;
 
   return (
-    <main className="flex flex-1 flex-col items-center gap-6 bg-zinc-50 px-4 py-16 text-center font-sans sm:py-20 dark:bg-black">
+    <main className="flex flex-1 flex-col items-center gap-6 px-4 py-16 text-center font-sans sm:py-20">
       <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-black sm:text-5xl dark:text-zinc-50">
         Your AI twin goes on the first chat for you.
       </h1>
