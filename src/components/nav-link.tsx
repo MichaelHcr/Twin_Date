@@ -22,7 +22,7 @@ export function NavLink({
   return (
     <Link
       href={href}
-      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${
+      className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium sm:flex-none ${
         active
           ? "bg-black text-white dark:bg-white dark:text-black"
           : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"

@@ -1,10 +1,7 @@
 import Link from "next/link";
-import { Instrument_Sans } from "next/font/google";
 
 // The home page for signed-out visitors: what Twin Date is and why, following
 // slides 2 (the problem) and 3 (our solution) of the demo deck, in its look.
-
-const instrument = Instrument_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 const PROBLEMS = [
   { title: "Screening takes hours", body: "Many chats before you know if it fits." },
@@ -20,7 +17,7 @@ const SOLUTIONS = [
 
 export function Landing() {
   return (
-    <main className={`landing ${instrument.className} flex-1 overflow-hidden bg-(--paper) text-(--ink)`}>
+    <main className="landing flex-1 overflow-hidden bg-(--paper) font-sans text-(--ink)">
       <Hero />
       <Problem />
       <Solution />

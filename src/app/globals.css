@@ -1,26 +1,64 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f1e9;
+  --foreground: #1d1b26;
+}
+
+/* One look for the whole site, from the demo deck and the landing page:
+   greys are warm (paper, card, ink), violet is what the AI twins do and pink is
+   liking. Retuning Tailwind's own scales here restyles every page at once, so
+   components keep using zinc, black, white, violet and pink classes. */
+@theme {
+  --color-white: #fffdf9;
+  --color-black: #1d1b26;
+
+  --color-zinc-50: #f6f1e9;
+  --color-zinc-100: #ece6dc;
+  --color-zinc-200: #e6dfd3;
+  --color-zinc-300: #d3cbbf;
+  --color-zinc-400: #a49dab;
+  --color-zinc-500: #6f6a77;
+  --color-zinc-600: #5b5664;
+  --color-zinc-700: #45414f;
+  --color-zinc-800: #2e2b38;
+  --color-zinc-900: #24212d;
+  --color-zinc-950: #1a1822;
+
+  --color-violet-50: #f5f2ff;
+  --color-violet-100: #ebe5ff;
+  --color-violet-200: #d9cffc;
+  --color-violet-300: #bba9f6;
+  --color-violet-500: #7a5ce6;
+  --color-violet-600: #5b3fd0;
+  --color-violet-700: #4a31b0;
+  --color-violet-800: #3a268c;
+  --color-violet-900: #2b1f6b;
+  --color-violet-950: #1e1550;
+
+  --color-pink-100: #fde4ee;
+  --color-pink-300: #f4a3c1;
+  --color-pink-500: #d83a70;
+  --color-pink-800: #831843;
+  --color-pink-950: #4a0d26;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   /* Twin Date pink: buttons, your chat bubbles, rings and unread dots. */
-  --color-brand: #d4537e;
-  --color-brand-hover: #c0436d;
-  --color-brand-soft: #fbeaf0;
-  --color-brand-ink: #72243e;
-  --font-sans: var(--font-geist-sans);
+  --color-brand: #d83a70;
+  --color-brand-hover: #c22e62;
+  --color-brand-soft: #fde4ee;
+  --color-brand-ink: #831843;
+  --font-sans: var(--font-instrument-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #1a1822;
+    --foreground: #f6f1e9;
   }
 }
 
@@ -59,5 +97,5 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), sans-serif;
 }

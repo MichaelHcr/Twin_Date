@@ -12,10 +12,11 @@ import { createClient } from "@/lib/supabase/server";
 // loading state; SiteHeader fills in the nav and the account menu.
 export function HeaderShell({ children }: { children?: React.ReactNode }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-black/90">
-      <div className="mx-auto flex h-16 w-full max-w-3xl items-center gap-2 px-4 font-sans">
-        <Link href="/" className="mr-3 text-lg font-semibold tracking-tight text-black dark:text-zinc-50">
-          Twin Date
+    <header className="sticky top-0 z-20 border-b border-zinc-200 bg-zinc-50/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
+      <div className="mx-auto flex min-h-16 w-full max-w-3xl flex-wrap items-center gap-x-2 px-4 font-sans">
+        {/* On phones the nav drops to its own row under the logo and avatar. */}
+        <Link href="/" className="mr-3 flex h-16 items-center text-lg font-semibold tracking-tight text-black dark:text-zinc-50">
+          Twin <span className="ml-1 text-pink-500">Date</span>
         </Link>
         {children}
       </div>
@@ -76,7 +77,7 @@ export async function SiteHeader() {
   return (
     <HeaderShell>
       {profile?.onboarding_complete && (
-        <nav className="flex items-center gap-1">
+        <nav className="order-last -mx-1 flex w-full items-center justify-between gap-1 pb-2 sm:order-none sm:mx-0 sm:w-auto sm:justify-start sm:pb-0">
           <NavLink
             href="/connections"
             count={requests + unreadChats || connected}
@@ -87,6 +88,7 @@ export async function SiteHeader() {
           <NavLink href="/matches" count={yourCall}>
             Matches
           </NavLink>
+          <NavLink href="/twin">My twin</NavLink>
         </nav>
       )}
       <AccountMenu name={name} email={user.email ?? ""} photoUrl={photoUrl} />
