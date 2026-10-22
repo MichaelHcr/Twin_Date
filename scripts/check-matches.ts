@@ -7,6 +7,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sameCity } from "@/lib/matches";
+import { isInterestedIn } from "@/lib/profile-topics";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type Profile = {
@@ -79,8 +80,8 @@ async function main() {
   const steps: [string, (p: Profile) => boolean][] = [
     ["finished onboarding", (p) => p.onboarding_complete],
     [`same city ("${me.city}")`, (p) => sameCity(p.city, me.city)],
-    [`is a gender you seek (${me.seeking.join("/")})`, (p) => me.seeking.includes(p.gender)],
-    [`seeks your gender (${me.gender})`, (p) => p.seeking.includes(me.gender)],
+    [`is a gender you seek (${me.seeking.join("/")})`, (p) => isInterestedIn(me.seeking, p.gender)],
+    [`seeks your gender (${me.gender})`, (p) => isInterestedIn(p.seeking, me.gender)],
     [`their age is in your range (${me.age_min}-${me.age_max})`, (p) => ageOf(p.birthdate) >= me.age_min && ageOf(p.birthdate) <= me.age_max],
     [`your age (${myAge}) is in their range`, (p) => myAge >= p.age_min && myAge <= p.age_max],
     [`compatible goal (${me.goal})`, (p) => goalsFit(me.goal, p.goal)],

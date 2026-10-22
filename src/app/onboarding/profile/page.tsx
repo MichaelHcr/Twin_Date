@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { OwnPhotos } from "@/components/photos/own-photos";
 import { requireUser } from "@/lib/auth";
+import { OTHER_INTERESTS, readInterests } from "@/lib/interests";
 import { ageOf } from "@/lib/decisions";
 import { MAX_PHOTOS, signPhotoUrls } from "@/lib/photos";
 import { GOALS, TOPICS } from "@/lib/profile-topics";
@@ -80,6 +81,12 @@ async function ProfileLoader() {
           topics: Object.fromEntries(TOPICS.map((t) => [t.key, answers[t.key] ?? ""])),
           // A free-response topic left empty after a save was skipped on purpose.
           skipped: p?.display_name ? TOPICS.filter((t) => !t.options && !answers[t.key]).map((t) => t.key) : [],
+          // Profiles from before the category picker keep their free-text answer under "Anything else".
+          interests: readInterests(p?.interests).length
+            ? readInterests(p?.interests).map(({ category, specifics, open }) => ({ category, specifics, open }))
+            : answers.interests
+              ? [{ category: OTHER_INTERESTS, specifics: answers.interests, open: false }]
+              : [],
         }}
       />
     </>

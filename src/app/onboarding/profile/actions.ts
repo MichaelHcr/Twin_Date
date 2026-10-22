@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
-import { GENDERS, GOALS, OTHER, TOPICS } from "@/lib/profile-topics";
+import { parseInterests } from "@/lib/agents/interest-parser";
+import { describeInterests, INTEREST_CATEGORIES, OTHER_INTERESTS, readInterests, type Interest } from "@/lib/interests";
+import { EVERYONE, GENDERS, GOALS, OTHER, SEEKING, TOPICS } from "@/lib/profile-topics";
+
+// An interest as picked on the form, before the AI parses its specifics into items.
+export type InterestPick = Omit<Interest, "items">;
 
 export type ProfileValues = {
   display_name: string;
@@ -20,6 +25,8 @@ export type ProfileValues = {
   topics: Record<string, string>;
   // Free-response topics the user chose to skip for now.
   skipped: string[];
+  // Interest categories ticked, with their specifics; replaces the free-text interests answer.
+  interests: InterestPick[];
 };
 
 export type SaveProfileState = { error: string; values: ProfileValues } | null;
@@ -28,8 +35,17 @@ const ProfileSchema = z
   .object({
     display_name: z.string().trim().min(1, "Please enter a first name.").max(40),
     birthdate: z.iso.date("Please enter your birthdate."),
-    gender: z.enum(GENDERS, "Please choose your gender."),
-    seeking: z.array(z.enum(GENDERS)).min(1, "Choose at least one gender you're interested in."),
+    gender: z
+      .string()
+      .trim()
+      .min(1, "Please choose your gender, or describe it in your own words.")
+      .max(40, "Please keep your gender to 40 characters.")
+      // Typing a listed gender in your own words counts as choosing it.
+      .transform((g) => GENDERS.find((x) => x === g.toLowerCase()) ?? g),
+    seeking: z
+      .array(z.enum(SEEKING))
+      .min(1, "Choose who you're interested in, or Everyone.")
+      .transform((s) => (s.includes(EVERYONE) ? [EVERYONE] : s)),
     age_min: z.coerce.number().int().min(18, "Minimum age must be 18 or more."),
     age_max: z.coerce.number().int().max(99),
     city: z.string().trim().min(1, "Please enter your city.").max(80),
@@ -53,7 +69,8 @@ function readValues(formData: FormData): ProfileValues {
   return {
     display_name: text("display_name"),
     birthdate: text("birthdate"),
-    gender: text("gender"),
+    // "self" means the person described their gender in their own words.
+    gender: text("gender") === "self" ? text("gender_self").trim() : text("gender"),
     city: text("city"),
     seeking: formData.getAll("seeking").map(String),
     age_min: text("age_min"),
@@ -67,12 +84,35 @@ function readValues(formData: FormData): ProfileValues {
       }),
     ),
     skipped: TOPICS.filter((t) => !t.options && formData.get(`skip_${t.key}`) === "on").map((t) => t.key),
+    interests: [
+      ...INTEREST_CATEGORIES.filter((c) => formData.getAll("interest").includes(c.key)).map((c) => ({
+        category: c.key,
+        specifics: text(`interest_${c.key}`).trim().slice(0, 300),
+        open: formData.get(`interest_${c.key}_open`) === "on",
+      })),
+      ...(text("interest_other").trim()
+        ? [{ category: OTHER_INTERESTS, specifics: text("interest_other").trim().slice(0, 300), open: false }]
+        : []),
+    ],
   };
 }
 
 // Every multiple-choice topic needs an answer; free-response ones need text or "skip for now".
+// Interests are optional and come from the category picker instead.
 function missingTopic(values: ProfileValues) {
-  return TOPICS.find((t) => !values.topics[t.key] && !values.skipped.includes(t.key));
+  return TOPICS.find((t) => t.key !== "interests" && !values.topics[t.key] && !values.skipped.includes(t.key));
+}
+
+// Parses each interest's specifics into items, reusing the stored items for
+// specifics that haven't changed so an unchanged profile needs no model call.
+async function withItems(picks: InterestPick[], stored: unknown): Promise<Interest[]> {
+  const before = readInterests(stored);
+  const known = (p: InterestPick) => before.find((b) => b.category === p.category && b.specifics === p.specifics);
+  const parsed = await parseInterests(picks.filter((p) => !known(p)).map((p) => ({ ...p, items: [] })));
+  return picks.map((p) => {
+    const k = known(p);
+    return k ? { ...p, items: k.items } : parsed.find((x) => x.category === p.category)!;
+  });
 }
 
 // On a validation error, returns the message plus everything the user typed,
@@ -99,11 +139,20 @@ export async function saveProfile(
     };
   }
 
+  const { data: stored } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
+  const interests = await withItems(values.interests, stored?.interests);
+
   const { error: profileError } = await supabase
     .from("profiles")
-    .update({ ...parsed.data, updated_at: new Date().toISOString() })
+    .update({ ...parsed.data, interests, updated_at: new Date().toISOString() })
     .eq("user_id", user.id);
   if (profileError) return { error: profileError.message, values };
+
+  // The interests answer is a readable summary of the picker, for the twin and
+  // the other agents; no interests clears it.
+  const interestsSummary = describeInterests(interests);
+  values.topics.interests = interestsSummary;
+  if (!interestsSummary) values.skipped.push("interests");
 
   // The profile holds only what the user entered here; the interview's notes live
   // in interview_facts. A skipped topic clears any earlier answer.

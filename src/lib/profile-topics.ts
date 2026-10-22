@@ -156,4 +156,29 @@ export const GOALS = [
   { value: "open", label: "Open to either" },
 ] as const;
 
+// Gender: one of these, or the person's own words (e.g. "genderfluid"), stored
+// as typed. For matching, anything other than woman or man counts as non-binary.
 export const GENDERS = ["woman", "man", "non-binary"] as const;
+export const GENDER_LABELS: Record<(typeof GENDERS)[number], string> = {
+  woman: "Woman",
+  man: "Man",
+  "non-binary": "Non-binary",
+};
+
+// Interested in: any mix of the three groups, or everyone (every gender,
+// including people who describe theirs in their own words).
+export const EVERYONE = "everyone";
+export const SEEKING = [...GENDERS, EVERYONE] as const;
+export const SEEKING_LABELS: Record<(typeof SEEKING)[number], string> = {
+  woman: "Women",
+  man: "Men",
+  "non-binary": "Non-binary people",
+  everyone: "Everyone",
+};
+
+export const genderGroup = (gender: string) => (gender === "woman" || gender === "man" ? gender : "non-binary");
+
+// Whether someone with this "interested in" list wants to meet this gender.
+// Choosing only "man" means men only; "everyone" means anyone.
+export const isInterestedIn = (seeking: string[], gender: string) =>
+  seeking.includes(EVERYONE) || seeking.includes(genderGroup(gender));

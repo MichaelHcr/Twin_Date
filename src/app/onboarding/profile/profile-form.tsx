@@ -1,8 +1,20 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { GENDERS, GOALS, OTHER, TOPICS, type Tier, type Topic } from "@/lib/profile-topics";
-import { saveProfile, type ProfileValues } from "./actions";
+import {
+  EVERYONE,
+  GENDER_LABELS,
+  GENDERS,
+  GOALS,
+  OTHER,
+  SEEKING,
+  SEEKING_LABELS,
+  TOPICS,
+  type Tier,
+  type Topic,
+} from "@/lib/profile-topics";
+import { INTEREST_CATEGORIES, OTHER_INTERESTS } from "@/lib/interests";
+import { saveProfile, type InterestPick, type ProfileValues } from "./actions";
 
 export function ProfileForm({ initial }: { initial: ProfileValues }) {
   const [state, action, pending] = useActionState(saveProfile, null);
@@ -25,31 +37,14 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
         <Field label="Birthdate">
           <input name="birthdate" type="date" required defaultValue={v.birthdate} className={inputClass} />
         </Field>
-        <Field label="I am a">
-          <select name="gender" required defaultValue={v.gender} className={inputClass}>
-            <option value="" disabled>Choose…</option>
-            {GENDERS.map((g) => (
-              <option key={g} value={g}>{g}</option>
-            ))}
-          </select>
-        </Field>
+        <GenderQuestion saved={v.gender} />
         <Field label="City">
           <input name="city" required placeholder="e.g. Boston, MA" defaultValue={v.city} className={inputClass} />
         </Field>
       </Section>
 
       <Section title="Who you're looking for">
-        <fieldset className="flex flex-col gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          <legend className="mb-1.5">Interested in</legend>
-          <div className="flex gap-4">
-            {GENDERS.map((g) => (
-              <label key={g} className="flex items-center gap-2 font-normal">
-                <input type="checkbox" name="seeking" value={g} defaultChecked={v.seeking.includes(g)} />
-                {g}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+        <SeekingQuestion saved={v.seeking} />
         <div className="grid grid-cols-3 gap-3">
           <Field label="Min age">
             <input name="age_min" type="number" min={18} max={99} required defaultValue={v.age_min} className={inputClass} />
@@ -77,7 +72,9 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
           <TierBadge tier="locked" /> are facts your twin will never guess about.
         </p>
         {TOPICS.map((topic) =>
-          topic.options ? (
+          topic.key === "interests" ? (
+            <InterestsQuestion key={topic.key} saved={v.interests} />
+          ) : topic.options ? (
             <ChoiceQuestion key={topic.key} topic={topic} saved={v.topics[topic.key] ?? ""} />
           ) : (
             <FreeQuestion
@@ -103,6 +100,166 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
 const inputClass =
   "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50";
 
+const pillClass = (selected: boolean) =>
+  `cursor-pointer rounded-full border px-3 py-1.5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-zinc-400 ${
+    selected ? "border-violet-600 bg-violet-600 text-white" : "border-zinc-300 hover:border-zinc-500 dark:border-zinc-700"
+  }`;
+
+// Woman, man, non-binary, or in your own words. A saved gender that isn't one of
+// the three was written by the person, so it shows under "In my own words".
+function GenderQuestion({ saved }: { saved: string }) {
+  const savedIsOwn = saved !== "" && !(GENDERS as readonly string[]).includes(saved);
+  const [choice, setChoice] = useState(savedIsOwn ? "self" : saved);
+  return (
+    <fieldset className="flex flex-col gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+      <legend className="mb-2 font-medium">I am</legend>
+      <div className="flex flex-wrap gap-2">
+        {[...GENDERS, "self" as const].map((g) => (
+          <label key={g} className={pillClass(choice === g)}>
+            <input
+              type="radio"
+              name="gender"
+              value={g}
+              required
+              checked={choice === g}
+              onChange={() => setChoice(g)}
+              className="sr-only"
+            />
+            {g === "self" ? "In my own words…" : GENDER_LABELS[g]}
+          </label>
+        ))}
+      </div>
+      {choice === "self" && (
+        <>
+          <input
+            name="gender_self"
+            required
+            maxLength={40}
+            autoFocus={!savedIsOwn}
+            defaultValue={savedIsOwn ? saved : ""}
+            placeholder="e.g. genderfluid, agender"
+            aria-label="Your gender, in your own words"
+            className={inputClass}
+          />
+          <p className="text-xs text-zinc-500">
+            For matching, you&apos;ll be shown to people interested in non-binary people or open to everyone.
+          </p>
+        </>
+      )}
+    </fieldset>
+  );
+}
+
+// Women, men, non-binary people (any mix), or Everyone. Everyone stands alone:
+// picking it clears the others, and picking one of them clears Everyone.
+function SeekingQuestion({ saved }: { saved: string[] }) {
+  const [picked, setPicked] = useState<string[]>(saved);
+  const toggle = (s: string) =>
+    setPicked((p) =>
+      p.includes(s) ? p.filter((x) => x !== s) : s === EVERYONE ? [EVERYONE] : [...p.filter((x) => x !== EVERYONE), s],
+    );
+  return (
+    <fieldset className="flex flex-col gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+      <legend className="mb-2 font-medium">Interested in</legend>
+      <div className="flex flex-wrap gap-2">
+        {SEEKING.map((s) => (
+          <label key={s} className={pillClass(picked.includes(s))}>
+            <input
+              type="checkbox"
+              name="seeking"
+              value={s}
+              checked={picked.includes(s)}
+              onChange={() => toggle(s)}
+              className="sr-only"
+            />
+            {SEEKING_LABELS[s]}
+          </label>
+        ))}
+      </div>
+      <p className="text-xs text-zinc-500">
+        {picked.includes(EVERYONE)
+          ? "You'll meet people of every gender, including people who describe theirs in their own words."
+          : "Pick any mix, or Everyone. We only match you with the genders you pick."}
+      </p>
+    </fieldset>
+  );
+}
+
+// Interest categories as checkboxes. A ticked one opens a box for specifics
+// (anything: a sport, a team, an author, a style) and an "open to trying other
+// things" box, so matching can tell "only soccer" from "soccer, and up for more".
+function InterestsQuestion({ saved }: { saved: InterestPick[] }) {
+  const [picked, setPicked] = useState(() => new Set(saved.map((s) => s.category)));
+  const savedOf = (key: string) => saved.find((s) => s.category === key);
+  const toggle = (key: string) =>
+    setPicked((p) => {
+      const next = new Set(p);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  return (
+    <fieldset id="topic-interests" className="flex scroll-mt-24 flex-col gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+      <legend className="mb-1 font-medium">
+        Which areas are you into? <TierBadge tier="open" />
+      </legend>
+      <p className="-mt-1 mb-1 text-xs text-zinc-500">
+        Tick any that fit, then name the specifics in your own words. Your twin uses these to find what you have in
+        common, and what you&apos;d be up for trying.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {INTEREST_CATEGORIES.map((c) => (
+          <label key={c.key} className={pillClass(picked.has(c.key))}>
+            <input
+              type="checkbox"
+              name="interest"
+              value={c.key}
+              checked={picked.has(c.key)}
+              onChange={() => toggle(c.key)}
+              className="sr-only"
+            />
+            {c.label}
+          </label>
+        ))}
+      </div>
+      {INTEREST_CATEGORIES.filter((c) => picked.has(c.key)).map((c) => (
+        <div key={c.key} className="mt-2 flex flex-col gap-2 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-900">
+          <label className="flex flex-col gap-1.5 font-medium">
+            {c.label}: which ones?
+            <input
+              name={`interest_${c.key}`}
+              maxLength={300}
+              defaultValue={savedOf(c.key)?.specifics ?? ""}
+              placeholder={c.placeholder}
+              className={inputClass}
+            />
+          </label>
+          <label className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
+            <input
+              type="checkbox"
+              name={`interest_${c.key}_open`}
+              defaultChecked={savedOf(c.key)?.open ?? false}
+              className="h-4 w-4 accent-violet-600"
+            />
+            Open to trying other {c.noun} too
+          </label>
+        </div>
+      ))}
+      <label className="mt-2 flex flex-col gap-1.5 font-medium">
+        Anything else? <span className="font-normal text-zinc-500">(optional)</span>
+        <textarea
+          name="interest_other"
+          rows={2}
+          maxLength={300}
+          defaultValue={savedOf(OTHER_INTERESTS)?.specifics ?? ""}
+          placeholder="e.g. volunteering at the animal shelter, learning Italian"
+          className={inputClass}
+        />
+      </label>
+    </fieldset>
+  );
+}
+
 // Multiple choice with an "Other" write-in. A saved answer that isn't one of the
 // options (typed under Other, or from before the options existed) shows as Other.
 function ChoiceQuestion({ topic, saved }: { topic: Topic; saved: string }) {
@@ -117,14 +274,7 @@ function ChoiceQuestion({ topic, saved }: { topic: Topic; saved: string }) {
       </legend>
       <div className="flex flex-wrap gap-2">
         {[...options, OTHER].map((o) => (
-          <label
-            key={o}
-            className={`cursor-pointer rounded-full border px-3 py-1.5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-zinc-400 ${
-              choice === o
-                ? "border-violet-600 bg-violet-600 text-white"
-                : "border-zinc-300 hover:border-zinc-500 dark:border-zinc-700"
-            }`}
-          >
+          <label key={o} className={pillClass(choice === o)}>
             <input
               type="radio"
               name={name}
