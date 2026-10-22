@@ -19,9 +19,9 @@ export const TITLE = "text-xl font-semibold tracking-tight text-black dark:text-
 export const LABEL = "text-sm text-zinc-500";
 export const MUTED = "text-xs text-zinc-500";
 
-// Buttons: black for the main action, outlined for the rest.
+// Buttons: pink to violet (liking meets the twins) for the main action, outlined for the rest.
 export const BTN_PRIMARY =
-  "inline-flex items-center justify-center rounded-full bg-black px-5 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200";
+  "inline-flex items-center justify-center rounded-full bg-linear-to-r from-pink-500 to-violet-600 shadow-md shadow-pink-500/20 hover:brightness-110 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50";
 export const BTN_SECONDARY =
   "inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-5 py-2.5 text-sm font-semibold text-black hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900";
 export const BTN_PILL =

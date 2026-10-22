@@ -37,7 +37,7 @@ export function CheckoutButton({ tier, label }: { tier: "plus" | "pro"; label: s
       <button
         onClick={() => go({ tier })}
         disabled={pending}
-        className="w-full rounded-full bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+        className="w-full rounded-full bg-linear-to-r from-pink-500 to-violet-600 shadow-md shadow-pink-500/20 hover:brightness-110 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
       >
         {pending ? "Opening checkout…" : label}
       </button>

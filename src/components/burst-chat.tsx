@@ -111,7 +111,7 @@ export function BurstChat({
               type="button"
               onClick={finish}
               disabled={!canFinish}
-              className="rounded-lg bg-black px-4 py-2 font-medium text-white disabled:opacity-40 dark:bg-white dark:text-black"
+              className="rounded-lg bg-linear-to-r from-pink-500 to-violet-600 shadow-md shadow-pink-500/20 hover:brightness-110 px-4 py-2 font-medium text-white disabled:opacity-40"
             >
               Finish
             </button>

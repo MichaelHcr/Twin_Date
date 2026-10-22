@@ -67,7 +67,7 @@ function AuthButtons({ className = "", style }: { className?: string; style?: Re
     <div className={`flex flex-wrap items-center justify-center gap-3 ${className}`} style={style}>
       <Link
         href="/login?mode=signup"
-        className="inline-flex min-w-36 items-center justify-center rounded-full bg-(--ink) px-7 py-3.5 text-base font-semibold text-(--paper) transition hover:bg-black"
+        className="inline-flex min-w-36 items-center justify-center rounded-full bg-linear-to-r from-pink-500 to-violet-600 px-7 py-3.5 text-base font-semibold text-white shadow-md shadow-pink-500/20 transition hover:brightness-110"
       >
         Sign up
       </Link>

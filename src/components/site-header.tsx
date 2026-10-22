@@ -40,7 +40,7 @@ export async function SiteHeader() {
       <HeaderShell>
         <Link
           href="/login"
-          className="ml-auto rounded-full bg-black px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+          className="ml-auto rounded-full bg-linear-to-r from-pink-500 to-violet-600 shadow-md shadow-pink-500/20 hover:brightness-110 px-4 py-2 text-sm font-medium text-white"
         >
           Sign in
         </Link>

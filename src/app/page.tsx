@@ -63,7 +63,7 @@ async function SignedInHome({
     <div className="flex flex-col items-center gap-3">
       <Link
         href={next.href}
-        className="rounded-full bg-black px-5 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+        className="rounded-full bg-linear-to-r from-pink-500 to-violet-600 shadow-md shadow-pink-500/20 hover:brightness-110 px-5 py-2 text-sm font-medium text-white"
       >
         {next.label}
       </Link>
