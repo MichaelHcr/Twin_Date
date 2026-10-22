@@ -69,7 +69,7 @@ export function Chat({ initialMessages }: { initialMessages: ChatMessage[] }) {
             <p className="text-black dark:text-zinc-50">Interview complete!</p>
             <Link
               href="/twin"
-              className="mt-3 inline-block rounded-full bg-black px-5 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+              className="mt-3 inline-block rounded-full bg-linear-to-r from-pink-500 to-violet-600 shadow-md shadow-pink-500/20 hover:brightness-110 px-5 py-2 text-sm font-medium text-white"
             >
               See your summary and meet your twin
             </Link>

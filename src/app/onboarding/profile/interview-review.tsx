@@ -57,7 +57,7 @@ export async function InterviewReview() {
                 <div className="mt-3 flex flex-wrap gap-2">
                   <a
                     href={`#topic-${c.topic}`}
-                    className="rounded-full bg-black px-4 py-1.5 font-medium text-white dark:bg-white dark:text-black"
+                    className="rounded-full bg-linear-to-r from-pink-500 to-violet-600 shadow-md shadow-pink-500/20 hover:brightness-110 px-4 py-1.5 font-medium text-white"
                   >
                     Update my profile
                   </a>

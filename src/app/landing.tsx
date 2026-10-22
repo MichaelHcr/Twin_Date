@@ -1,10 +1,7 @@
 import Link from "next/link";
-import { Instrument_Sans } from "next/font/google";
 
 // The home page for signed-out visitors: what Twin Date is and why, following
 // slides 2 (the problem) and 3 (our solution) of the demo deck, in its look.
-
-const instrument = Instrument_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 const PROBLEMS = [
   { title: "Screening takes hours", body: "Many chats before you know if it fits." },
@@ -20,7 +17,7 @@ const SOLUTIONS = [
 
 export function Landing() {
   return (
-    <main className={`landing ${instrument.className} flex-1 overflow-hidden bg-(--paper) text-(--ink)`}>
+    <main className="landing flex-1 overflow-hidden font-sans text-(--ink)">
       <Hero />
       <Problem />
       <Solution />
@@ -70,7 +67,7 @@ function AuthButtons({ className = "", style }: { className?: string; style?: Re
     <div className={`flex flex-wrap items-center justify-center gap-3 ${className}`} style={style}>
       <Link
         href="/login?mode=signup"
-        className="inline-flex min-w-36 items-center justify-center rounded-full bg-(--ink) px-7 py-3.5 text-base font-semibold text-(--paper) transition hover:bg-black"
+        className="inline-flex min-w-36 items-center justify-center rounded-full bg-linear-to-r from-pink-500 to-violet-600 px-7 py-3.5 text-base font-semibold text-white shadow-md shadow-pink-500/20 transition hover:brightness-110"
       >
         Sign up
       </Link>
@@ -166,7 +163,7 @@ function Solution() {
         <div className="mt-10 flex flex-col gap-3">
           {SOLUTIONS.map((s) => (
             <div key={s.before} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-              <div className="rounded-2xl bg-[#ece6dc] px-5 py-4 text-lg font-semibold text-(--muted) line-through decoration-1 sm:w-64 sm:shrink-0">
+              <div className="rounded-2xl bg-zinc-100 px-5 py-4 text-lg font-semibold text-(--muted) line-through decoration-1 sm:w-64 sm:shrink-0">
                 {s.before}
               </div>
               <Arrow />

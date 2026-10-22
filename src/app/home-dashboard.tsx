@@ -6,7 +6,7 @@ import { loadChatSummaries } from "@/lib/chat";
 import { loadDecisionStates, loadRevealedProfiles, NO_DECISION, wantsToMeet } from "@/lib/decisions";
 import { scoreColor, single } from "@/lib/matches";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { BTN_SECONDARY, CARD as CARD_BASE, DOT_ALERT } from "@/lib/ui";
+import { BTN_PRIMARY, CARD as CARD_BASE, DOT_ALERT } from "@/lib/ui";
 
 type Row = {
   id: string;
@@ -106,7 +106,7 @@ export async function HomeDashboard({ supabase, userId }: { supabase: SupabaseCl
         <div className="mt-auto pt-6">
           <Link
             href="/connections"
-            className={BTN_SECONDARY}
+            className={BTN_PRIMARY}
           >
             Open connections →
           </Link>

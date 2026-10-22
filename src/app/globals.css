@@ -1,38 +1,76 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf7fb;
+  --foreground: #1d1b26;
+}
+
+/* One look for the whole site, from the demo deck and the landing page:
+   soft lilac greys with a deep ink, violet for what the AI twins do and pink
+   for liking. Retuning Tailwind's own scales here restyles every page at once, so
+   components keep using zinc, black, white, violet and pink classes. */
+@theme {
+  --color-white: #fffdfe;
+  --color-black: #1d1b26;
+
+  --color-zinc-50: #f8f5fa;
+  --color-zinc-100: #efeaf3;
+  --color-zinc-200: #e7e1ec;
+  --color-zinc-300: #d6cfdd;
+  --color-zinc-400: #a49dab;
+  --color-zinc-500: #6f6a77;
+  --color-zinc-600: #5b5664;
+  --color-zinc-700: #45414f;
+  --color-zinc-800: #2e2b38;
+  --color-zinc-900: #24212d;
+  --color-zinc-950: #1a1822;
+
+  --color-violet-50: #f5f2ff;
+  --color-violet-100: #ebe5ff;
+  --color-violet-200: #d9cffc;
+  --color-violet-300: #bba9f6;
+  --color-violet-500: #7a5ce6;
+  --color-violet-600: #5b3fd0;
+  --color-violet-700: #4a31b0;
+  --color-violet-800: #3a268c;
+  --color-violet-900: #2b1f6b;
+  --color-violet-950: #1e1550;
+
+  --color-pink-100: #fde4ee;
+  --color-pink-300: #f4a3c1;
+  --color-pink-500: #d83a70;
+  --color-pink-800: #831843;
+  --color-pink-950: #4a0d26;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   /* Twin Date pink: buttons, your chat bubbles, rings and unread dots. */
-  --color-brand: #d4537e;
-  --color-brand-hover: #c0436d;
-  --color-brand-soft: #fbeaf0;
-  --color-brand-ink: #72243e;
-  --font-sans: var(--font-geist-sans);
+  --color-brand: #d83a70;
+  --color-brand-hover: #c22e62;
+  --color-brand-soft: #fde4ee;
+  --color-brand-ink: #831843;
+  --font-sans: var(--font-instrument-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #1a1822;
+    --foreground: #f8f5fa;
   }
 }
 
-/* The signed-out landing page, in the demo deck's palette
-   (docs/presentation/twin-date-slides.html): warm paper, violet for what the
+/* The signed-out landing page, in the site palette, after the demo deck
+   (docs/presentation/twin-date-slides.html): lilac paper, violet for what the
    AI twins do, pink for liking and matches. */
 .landing {
-  --paper: #f6f1e9;
-  --card: #fffdf9;
+  --paper: #f8f5fa;
+  --card: #fffdfe;
   --ink: #1d1b26;
   --muted: #6f6a77;
-  --line: #e6dfd3;
+  --line: #e7e1ec;
   --twin: #5b3fd0;
   --twin-soft: #ebe5ff;
   --love: #d83a70;
@@ -56,8 +94,29 @@
   }
 }
 
+/* Behind every page: the landing hero's look, soft blurred glows of violet
+   (the twins) and pink (liking) on a near-white base. They stay put while the
+   page scrolls. Pages leave their own background transparent so it shows. */
 body {
-  background: var(--background);
+  background-color: #faf7fb;
+  background-image:
+    radial-gradient(38rem 30rem at 22% 8%, rgb(217 207 252 / 0.75), transparent 70%),
+    radial-gradient(34rem 28rem at 78% 42%, rgb(251 207 224 / 0.6), transparent 70%),
+    radial-gradient(40rem 30rem at 8% 85%, rgb(251 225 238 / 0.55), transparent 70%),
+    radial-gradient(36rem 30rem at 92% 95%, rgb(226 219 253 / 0.6), transparent 70%);
+  background-attachment: fixed;
+}
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #1a1822;
+    background-image:
+      radial-gradient(38rem 30rem at 22% 8%, rgb(91 63 208 / 0.22), transparent 70%),
+      radial-gradient(34rem 28rem at 78% 42%, rgb(216 58 112 / 0.16), transparent 70%),
+      radial-gradient(36rem 30rem at 92% 95%, rgb(91 63 208 / 0.14), transparent 70%);
+  }
+}
+
+body {
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), sans-serif;
 }

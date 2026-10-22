@@ -141,7 +141,7 @@ async function ChatLoader({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <ChatRoom conversationId={id} userId={user.id}>
-      <div className={`${CARD} flex h-[calc(100dvh-8rem)] min-h-[28rem] flex-col overflow-hidden`}>
+      <div className={`${CARD} flex h-[calc(100dvh-10.5rem)] min-h-[28rem] sm:h-[calc(100dvh-8rem)] flex-col overflow-hidden`}>
         <header className="flex items-center gap-3 border-b border-zinc-200 px-3 py-3 dark:border-zinc-800">
           <Link
             href="/connections"

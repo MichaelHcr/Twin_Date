@@ -59,7 +59,7 @@ export function AccountMenu({ name, email, photoUrl }: { name: string; email: st
             Edit profile and photos
           </Link>
           <Link href="/twin" onClick={() => setOpen(false)} className={item}>
-            Your twin
+            My twin
           </Link>
           <Link href="/matches" onClick={() => setOpen(false)} className={item}>
             Matches

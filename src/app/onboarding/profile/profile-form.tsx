@@ -92,7 +92,7 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
 
       <button
         disabled={pending}
-        className="sticky bottom-4 rounded-full bg-black px-6 py-3.5 text-base font-semibold text-white shadow-xl hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+        className="sticky bottom-4 rounded-full bg-linear-to-r from-pink-500 to-violet-600 shadow-md shadow-pink-500/20 hover:brightness-110 px-6 py-3.5 text-base font-semibold text-white shadow-xl disabled:opacity-50"
       >
         {pending ? "Saving…" : "Save profile"}
       </button>
@@ -121,7 +121,7 @@ function ChoiceQuestion({ topic, saved }: { topic: Topic; saved: string }) {
             key={o}
             className={`cursor-pointer rounded-full border px-3 py-1.5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-zinc-400 ${
               choice === o
-                ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                ? "border-violet-600 bg-violet-600 text-white"
                 : "border-zinc-300 hover:border-zinc-500 dark:border-zinc-700"
             }`}
           >

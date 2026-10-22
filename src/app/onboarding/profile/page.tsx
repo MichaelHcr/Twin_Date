@@ -11,7 +11,7 @@ import { ProfileForm } from "./profile-form";
 
 export default function ProfilePage() {
   return (
-    <main className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 font-sans dark:bg-black">
+    <main className="flex flex-1 justify-center px-4 py-12 font-sans">
       <div className="w-full max-w-xl">
         <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
           Your profile
@@ -131,7 +131,7 @@ function ProfileHero({
               <span className={`${chip} bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300`}>
                 ✓ Twin ready
               </span>
-              <Link href="/twin" className={`${chip} bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black`}>
+              <Link href="/twin" className={`${chip} bg-linear-to-r from-pink-500 to-violet-600 shadow-md shadow-pink-500/20 hover:brightness-110 text-white`}>
                 Talk to your twin →
               </Link>
             </>

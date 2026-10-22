@@ -72,7 +72,7 @@ export function PhotoManager({ userId, photos }: { userId: string; photos: OwnPh
       </ul>
 
       {photos.length < MAX_PHOTOS && (
-        <label className={`mt-4 inline-block cursor-pointer rounded-full bg-black px-5 py-2 text-sm font-medium text-white dark:bg-white dark:text-black ${busy ? "pointer-events-none opacity-50" : ""}`}>
+        <label className={`mt-4 inline-block cursor-pointer rounded-full bg-linear-to-r from-pink-500 to-violet-600 shadow-md shadow-pink-500/20 hover:brightness-110 px-5 py-2 text-sm font-medium text-white ${busy ? "pointer-events-none opacity-50" : ""}`}>
           {uploading ? "Uploading…" : photos.length === 0 ? "Add your first photo" : "Add a photo"}
           <input
             ref={input}

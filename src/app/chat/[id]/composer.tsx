@@ -141,7 +141,7 @@ export function ChatComposer({
                 fill(current.line);
                 setDismissed(true);
               }}
-              className="rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-white dark:text-black"
+              className="rounded-full bg-linear-to-r from-pink-500 to-violet-600 shadow-md shadow-pink-500/20 hover:brightness-110 px-3 py-1.5 text-xs font-semibold text-white"
             >
               Ask this
             </button>
@@ -267,7 +267,7 @@ export function ChatComposer({
           onClick={send}
           disabled={pending || !canSend}
           aria-label="Send"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-500 text-white transition hover:bg-violet-600 disabled:bg-zinc-300 dark:disabled:bg-zinc-700"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-r from-pink-500 to-violet-600 text-white transition hover:brightness-110 disabled:bg-zinc-300 dark:disabled:bg-zinc-700"
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden>
             <path d="M12 19V5M6 11l6-6 6 6" strokeLinecap="round" strokeLinejoin="round" />
