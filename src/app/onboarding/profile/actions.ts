@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
-import { GENDERS, GOALS, OTHER, TOPICS } from "@/lib/profile-topics";
+import { EVERYONE, GENDERS, GOALS, OTHER, SEEKING, TOPICS } from "@/lib/profile-topics";
 
 export type ProfileValues = {
   display_name: string;
@@ -28,8 +28,17 @@ const ProfileSchema = z
   .object({
     display_name: z.string().trim().min(1, "Please enter a first name.").max(40),
     birthdate: z.iso.date("Please enter your birthdate."),
-    gender: z.enum(GENDERS, "Please choose your gender."),
-    seeking: z.array(z.enum(GENDERS)).min(1, "Choose at least one gender you're interested in."),
+    gender: z
+      .string()
+      .trim()
+      .min(1, "Please choose your gender, or describe it in your own words.")
+      .max(40, "Please keep your gender to 40 characters.")
+      // Typing a listed gender in your own words counts as choosing it.
+      .transform((g) => GENDERS.find((x) => x === g.toLowerCase()) ?? g),
+    seeking: z
+      .array(z.enum(SEEKING))
+      .min(1, "Choose who you're interested in, or Everyone.")
+      .transform((s) => (s.includes(EVERYONE) ? [EVERYONE] : s)),
     age_min: z.coerce.number().int().min(18, "Minimum age must be 18 or more."),
     age_max: z.coerce.number().int().max(99),
     city: z.string().trim().min(1, "Please enter your city.").max(80),
@@ -53,7 +62,8 @@ function readValues(formData: FormData): ProfileValues {
   return {
     display_name: text("display_name"),
     birthdate: text("birthdate"),
-    gender: text("gender"),
+    // "self" means the person described their gender in their own words.
+    gender: text("gender") === "self" ? text("gender_self").trim() : text("gender"),
     city: text("city"),
     seeking: formData.getAll("seeking").map(String),
     age_min: text("age_min"),
