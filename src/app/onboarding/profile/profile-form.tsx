@@ -13,7 +13,8 @@ import {
   type Tier,
   type Topic,
 } from "@/lib/profile-topics";
-import { saveProfile, type ProfileValues } from "./actions";
+import { INTEREST_CATEGORIES, OTHER_INTERESTS } from "@/lib/interests";
+import { saveProfile, type InterestPick, type ProfileValues } from "./actions";
 
 export function ProfileForm({ initial }: { initial: ProfileValues }) {
   const [state, action, pending] = useActionState(saveProfile, null);
@@ -71,7 +72,9 @@ export function ProfileForm({ initial }: { initial: ProfileValues }) {
           <TierBadge tier="locked" /> are facts your twin will never guess about.
         </p>
         {TOPICS.map((topic) =>
-          topic.options ? (
+          topic.key === "interests" ? (
+            <InterestsQuestion key={topic.key} saved={v.interests} />
+          ) : topic.options ? (
             <ChoiceQuestion key={topic.key} topic={topic} saved={v.topics[topic.key] ?? ""} />
           ) : (
             <FreeQuestion
@@ -178,6 +181,81 @@ function SeekingQuestion({ saved }: { saved: string[] }) {
           ? "You'll meet people of every gender, including people who describe theirs in their own words."
           : "Pick any mix, or Everyone. We only match you with the genders you pick."}
       </p>
+    </fieldset>
+  );
+}
+
+// Interest categories as checkboxes. A ticked one opens a box for specifics
+// (anything: a sport, a team, an author, a style) and an "open to trying other
+// things" box, so matching can tell "only soccer" from "soccer, and up for more".
+function InterestsQuestion({ saved }: { saved: InterestPick[] }) {
+  const [picked, setPicked] = useState(() => new Set(saved.map((s) => s.category)));
+  const savedOf = (key: string) => saved.find((s) => s.category === key);
+  const toggle = (key: string) =>
+    setPicked((p) => {
+      const next = new Set(p);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  return (
+    <fieldset id="topic-interests" className="flex scroll-mt-24 flex-col gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+      <legend className="mb-1 font-medium">
+        Which areas are you into? <TierBadge tier="open" />
+      </legend>
+      <p className="-mt-1 mb-1 text-xs text-zinc-500">
+        Tick any that fit, then name the specifics in your own words. Your twin uses these to find what you have in
+        common, and what you&apos;d be up for trying.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {INTEREST_CATEGORIES.map((c) => (
+          <label key={c.key} className={pillClass(picked.has(c.key))}>
+            <input
+              type="checkbox"
+              name="interest"
+              value={c.key}
+              checked={picked.has(c.key)}
+              onChange={() => toggle(c.key)}
+              className="sr-only"
+            />
+            {c.label}
+          </label>
+        ))}
+      </div>
+      {INTEREST_CATEGORIES.filter((c) => picked.has(c.key)).map((c) => (
+        <div key={c.key} className="mt-2 flex flex-col gap-2 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-900">
+          <label className="flex flex-col gap-1.5 font-medium">
+            {c.label}: which ones?
+            <input
+              name={`interest_${c.key}`}
+              maxLength={300}
+              defaultValue={savedOf(c.key)?.specifics ?? ""}
+              placeholder={c.placeholder}
+              className={inputClass}
+            />
+          </label>
+          <label className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
+            <input
+              type="checkbox"
+              name={`interest_${c.key}_open`}
+              defaultChecked={savedOf(c.key)?.open ?? false}
+              className="h-4 w-4 accent-violet-600"
+            />
+            Open to trying other {c.noun} too
+          </label>
+        </div>
+      ))}
+      <label className="mt-2 flex flex-col gap-1.5 font-medium">
+        Anything else? <span className="font-normal text-zinc-500">(optional)</span>
+        <textarea
+          name="interest_other"
+          rows={2}
+          maxLength={300}
+          defaultValue={savedOf(OTHER_INTERESTS)?.specifics ?? ""}
+          placeholder="e.g. volunteering at the animal shelter, learning Italian"
+          className={inputClass}
+        />
+      </label>
     </fieldset>
   );
 }

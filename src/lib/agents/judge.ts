@@ -3,6 +3,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { loadLatestPersona } from "@/lib/agents/persona-builder";
+import { interestFit, readInterests } from "@/lib/interests";
 
 // The Judge agent (PRD: Agent architecture). After a twin-to-twin conversation
 // ends, it reads the transcript, both private ledgers and both persona cards, and
@@ -52,7 +53,7 @@ export type Report = z.infer<typeof ReportSchema>;
 
 const SYSTEM_PROMPT = `You are the Judge for Twin Date, a dating app where each user's AI twin has a first chat with another user's twin. Both people will read your report to decide whether to meet.
 
-You receive the transcript (Member A and Member B), each twin's private notes (its ledger), each person's persona highlights, and how the conversation ended.
+You receive the transcript (Member A and Member B), each twin's private notes (its ledger), each person's persona highlights, how the conversation ended, and their interest fit from both profiles: interests they share, things one is open to trying that the other likes, and areas where they like different things and neither wants to branch out.
 
 Score how promising this match is:
 - 0-20: a dealbreaker conflict (kids, religion, smoking, relocation, a stated dealbreaker)
@@ -67,6 +68,7 @@ Write two views of the same report, one for each person (for_member_a, for_membe
 - pros and cons are short, scannable phrases, not sentences. Put the most important first. Fold in the concrete moments that stood out, such as a shared joke or a dodged question.
 - red_flags: only real dealbreaker issues, phrased from the reader's side and kept simple, for example "Drug use not confirmed by {match}" or "{match} doesn't want kids; you do". Leave it empty if there are none.
 - next_steps: concrete action items for a first meeting, for example "Ask {match} where they stand on drugs". Start each with a verb.
+- Interests: a shared interest is a pro; something the reader is open to trying that {match} loves makes a good next step (for example "Ask {match} to take you to a basketball game"). Mention no-overlap areas only if they matter, as a light con.
 
 Rules:
 - Base everything on what was said in the transcript. Twins may improvise on minor topics, so treat ledger assumptions and anything unconfirmed as open questions, not facts.
@@ -82,7 +84,7 @@ export async function judgeConversation(admin: SupabaseClient, conversationId: s
   if (!conversation) throw new Error(`No conversation ${conversationId}.`);
   if (conversation.status !== "ended") throw new Error("The conversation hasn't ended yet.");
 
-  const [{ data: messages }, { data: ledgers }, personaA, personaB] = await Promise.all([
+  const [{ data: messages }, { data: ledgers }, personaA, personaB, { data: interestRows }] = await Promise.all([
     admin
       .from("messages")
       .select("speaker, content, turn")
@@ -95,7 +97,17 @@ export async function judgeConversation(admin: SupabaseClient, conversationId: s
       .eq("conversation_id", conversationId),
     loadLatestPersona(admin, conversation.user_a),
     loadLatestPersona(admin, conversation.user_b),
+    // Empty if the interests column doesn't exist yet (migration 0017).
+    admin.from("profiles").select("user_id, interests").in("user_id", [conversation.user_a, conversation.user_b]),
   ]);
+  const interestsOf = (id: string) => readInterests(interestRows?.find((r) => r.user_id === id)?.interests);
+  const fit = interestFit(interestsOf(conversation.user_a), interestsOf(conversation.user_b));
+  const interestFitText = JSON.stringify({
+    shared: fit.shared,
+    member_a_open_to_trying: fit.aCouldTry,
+    member_b_open_to_trying: fit.bCouldTry,
+    no_overlap_in: fit.noOverlap,
+  });
   if (!messages?.length) throw new Error("The conversation has no messages to judge.");
 
   const transcript = messages
@@ -131,7 +143,9 @@ ${transcript}
 <member_b_ledger>${ledgerOf("b")}</member_b_ledger>
 
 <member_a_persona>${personaOf(personaA)}</member_a_persona>
-<member_b_persona>${personaOf(personaB)}</member_b_persona>`,
+<member_b_persona>${personaOf(personaB)}</member_b_persona>
+
+<interest_fit>${interestFitText}</interest_fit>`,
       },
     ],
   });

@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { interestFit, readInterests, type Interest } from "@/lib/interests";
 import { sameCity } from "@/lib/matches";
 import { isInterestedIn } from "@/lib/profile-topics";
 
@@ -69,6 +70,12 @@ async function describe(admin: SupabaseClient, userIds: string[]) {
   );
 }
 
+// Interests by user. Empty if the column doesn't exist yet (migration 0017).
+async function loadInterests(admin: SupabaseClient, userIds: string[]) {
+  const { data } = await admin.from("profiles").select("user_id, interests").in("user_id", userIds);
+  return new Map<string, Interest[]>((data ?? []).map((p) => [p.user_id, readInterests(p.interests)]));
+}
+
 export async function scoutMatches(admin: SupabaseClient, userId: string, limit = 1) {
   const { data: me } = await admin
     .from("profiles")
@@ -113,11 +120,25 @@ export async function scoutMatches(admin: SupabaseClient, userId: string, limit 
     return candidates.map((c) => ({ userId: c.user_id, reason: "Passed all your filters." }));
   }
 
-  const info = await describe(admin, [userId, ...candidates.map((c) => c.user_id)]);
+  const ids = [userId, ...candidates.map((c) => c.user_id)];
+  const [info, interests] = await Promise.all([describe(admin, ids), loadInterests(admin, ids)]);
+  const mine = interests.get(userId) ?? [];
   const listing = candidates
-    .map((c, i) =>
-      JSON.stringify({ candidate: i + 1, age: ageOf(c.birthdate), goal: c.goal, ...info.get(c.user_id) }),
-    )
+    .map((c, i) => {
+      const fit = interestFit(mine, interests.get(c.user_id) ?? []);
+      return JSON.stringify({
+        candidate: i + 1,
+        age: ageOf(c.birthdate),
+        goal: c.goal,
+        ...info.get(c.user_id),
+        interest_fit: {
+          shared: fit.shared,
+          user_open_to_trying: fit.aCouldTry,
+          candidate_open_to_trying: fit.bCouldTry,
+          no_overlap_in: fit.noOverlap,
+        },
+      });
+    })
     .join("\n");
 
   const response = await client.beta.messages.parse({
@@ -126,7 +147,7 @@ export async function scoutMatches(admin: SupabaseClient, userId: string, limit 
     output_config: { effort: "low", format: betaZodOutputFormat(PickSchema) },
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
-    system: `You are the Scout for Twin Date, a dating app. Pick the candidates most worth a first chat with the user. Everyone listed already passes the hard filters (gender, age, goal, city). Prefer candidates whose kids, religion, smoking, relocation and dealbreaker answers don't conflict with the user's, then shared values, lifestyle and interests. Return up to ${limit + 2} picks, best first.`,
+    system: `You are the Scout for Twin Date, a dating app. Pick the candidates most worth a first chat with the user. Everyone listed already passes the hard filters (gender, age, goal, city). Prefer candidates whose kids, religion, smoking, relocation and dealbreaker answers don't conflict with the user's, then shared values, lifestyle and interests. interest_fit is worked out from both profiles: shared items are the strongest interest signal, things one person is open to trying are good talking points, and no_overlap_in means they each like different things in that area and neither wants to branch out. Return up to ${limit + 2} picks, best first.`,
     messages: [
       {
         role: "user",
