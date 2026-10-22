@@ -1,22 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f1e9;
+  --background: #faf7fb;
   --foreground: #1d1b26;
 }
 
 /* One look for the whole site, from the demo deck and the landing page:
-   greys are warm (paper, card, ink), violet is what the AI twins do and pink is
+   greys are soft lilac (paper, card) with a deep ink, violet is what the AI twins do and pink is
    liking. Retuning Tailwind's own scales here restyles every page at once, so
    components keep using zinc, black, white, violet and pink classes. */
 @theme {
-  --color-white: #fffdf9;
+  --color-white: #fffdfe;
   --color-black: #1d1b26;
 
-  --color-zinc-50: #f6f1e9;
-  --color-zinc-100: #ece6dc;
-  --color-zinc-200: #e6dfd3;
-  --color-zinc-300: #d3cbbf;
+  --color-zinc-50: #f8f5fa;
+  --color-zinc-100: #efeaf3;
+  --color-zinc-200: #e7e1ec;
+  --color-zinc-300: #d6cfdd;
   --color-zinc-400: #a49dab;
   --color-zinc-500: #6f6a77;
   --color-zinc-600: #5b5664;
@@ -58,7 +58,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #1a1822;
-    --foreground: #f6f1e9;
+    --foreground: #f8f5fa;
   }
 }
 
@@ -66,11 +66,11 @@
    (docs/presentation/twin-date-slides.html): warm paper, violet for what the
    AI twins do, pink for liking and matches. */
 .landing {
-  --paper: #f6f1e9;
-  --card: #fffdf9;
+  --paper: #f8f5fa;
+  --card: #fffdfe;
   --ink: #1d1b26;
   --muted: #6f6a77;
-  --line: #e6dfd3;
+  --line: #e7e1ec;
   --twin: #5b3fd0;
   --twin-soft: #ebe5ff;
   --love: #d83a70;

@@ -163,7 +163,7 @@ function Solution() {
         <div className="mt-10 flex flex-col gap-3">
           {SOLUTIONS.map((s) => (
             <div key={s.before} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-              <div className="rounded-2xl bg-[#ece6dc] px-5 py-4 text-lg font-semibold text-(--muted) line-through decoration-1 sm:w-64 sm:shrink-0">
+              <div className="rounded-2xl bg-zinc-100 px-5 py-4 text-lg font-semibold text-(--muted) line-through decoration-1 sm:w-64 sm:shrink-0">
                 {s.before}
               </div>
               <Arrow />
