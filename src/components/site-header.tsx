@@ -58,8 +58,9 @@ export async function SiteHeader() {
   ]);
   const unreadChats = [...chats.values()].filter((c) => c.unread > 0).length;
 
-  // Badges: matches waiting for a yes or pass; on Connections, requests waiting
-  // for an answer plus chats with unread messages, or else how many are connected.
+  // Badges: on Matches, everything waiting for your answer (red when someone sent
+  // you a request, since those sit at the top of the Matches page); on
+  // Connections, chats with unread messages, or else how many are connected.
   let yourCall = 0;
   let requests = 0;
   let connected = 0;
@@ -78,14 +79,10 @@ export async function SiteHeader() {
     <HeaderShell>
       {profile?.onboarding_complete && (
         <nav className="order-last -mx-1 flex w-full items-center justify-between gap-1 pb-2 sm:order-none sm:mx-0 sm:w-auto sm:justify-start sm:pb-0">
-          <NavLink
-            href="/connections"
-            count={requests + unreadChats || connected}
-            urgent={requests + unreadChats > 0}
-          >
+          <NavLink href="/connections" count={unreadChats || connected} urgent={unreadChats > 0}>
             Connections
           </NavLink>
-          <NavLink href="/matches" count={yourCall}>
+          <NavLink href="/matches" count={yourCall + requests} urgent={requests > 0}>
             Matches
           </NavLink>
           <NavLink href="/twin">My twin</NavLink>
