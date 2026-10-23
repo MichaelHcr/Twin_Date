@@ -13,7 +13,8 @@ import { GOALS, TOPICS } from "@/lib/profile-topics";
 // Used now for "Talk to your twin", and later for twin-to-twin conversations.
 
 const client = new Anthropic();
-const MODEL = "claude-opus-5-5";
+// Sonnet: about half the cost of Opus; quality holds for this job at the effort set below.
+const MODEL = "claude-sonnet-5-5";
 
 export const ReplySchema = z.object({
   messages: z
@@ -136,6 +137,8 @@ export async function runTwinTurn(systemPrompt: string, messages: Anthropic.Beta
     output_config: { effort: "low", format: betaZodOutputFormat(ReplySchema) },
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
+    // "Talk to your twin" resends a growing chat: cache the prompt and history so far.
+    cache_control: { type: "ephemeral" },
     system: systemPrompt,
     messages,
   });

@@ -43,18 +43,28 @@ users' twins; users get a ranked shortlist of transcripts and reports.
 - New Supabase redirect domains: previews are already covered by `https://twin-date-*-twin-date.vercel.app/**`.
 
 ## Agents (src/lib/agents/)
-- Model: `claude-opus-5-5` everywhere, with `output_config.effort` (`low` for chat,
-  `medium` for the Persona Builder), and server-side refusal fallback
-  (`betas: ["server-side-fallback-2026-07-01"], fallbacks: "default"`). Opus 5.5 doesn't
-  accept `thinking: {type: "disabled"}`, `budget_tokens`, or forced `tool_choice`.
+- Models, chosen per agent for cost: `claude-opus-5-5` for the Judge and Persona Builder
+  (quality matters, rare calls); `claude-sonnet-5-5` for the Twin, Interviewer, Scout and
+  Profile Checker; `claude-haiku-5-5` for the Match card, Chat topics and Interest parser.
+  Always set `output_config.effort` explicitly (`low` for chat, `medium` for the Judge,
+  Persona Builder and Profile Checker): Sonnet 5.5 defaults to `high`.
+- Opus and Sonnet calls use server-side refusal fallback
+  (`betas: ["server-side-fallback-2026-07-01"], fallbacks: "default"`). **Haiku 5.5 has no
+  server-side fallback: never send `fallbacks` to it**; handle `stop_reason: "refusal"` in code.
+  None of these models accept `thinking: {type: "disabled"}`, `budget_tokens`, forced
+  `tool_choice`, or `temperature`/`top_p`/`top_k`.
+- Prompt caching: the Twin's system prompt has a `cache_control` breakpoint
+  (`orchestrator.ts`), and the Interviewer and "Talk to your twin" use top-level
+  `cache_control` because their history only grows. Keep cached prefixes byte-stable
+  (no timestamps or per-request IDs in system prompts).
 - ReAct agents use the SDK tool runner: `client.beta.messages.toolRunner` with `betaZodTool`
   (see `interviewer.ts`). JSON outputs use `client.beta.messages.parse` with
   `betaZodOutputFormat` (see `persona-builder.ts`, `twin.ts`).
 - Rules that must hold are enforced in tool code, not only in prompts (for example,
-  `finish_interview` refuses until every locked topic is answered).
+  `finish_interview` refuses until the user has sent at least 6 messages).
 - Improvisation tiers (`src/lib/profile-topics.ts`): `locked` = twin never guesses, `soft` =
-  hedged guess allowed, `open` = may improvise. Twins read facts from `profile_answers`, not
-  from the persona card.
+  hedged guess allowed, `open` = may improvise. Twins read facts from `profile_answers` (the
+  form) and `interview_facts`, never from the persona card.
 - API routes turn agent errors into readable messages with `describeAgentError()` (`errors.ts`).
 
 ## Workflow

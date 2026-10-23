@@ -12,7 +12,8 @@ import { TOPICS } from "@/lib/profile-topics";
 // profiles and writes conversations, messages and ledgers.
 
 const client = new Anthropic();
-const MODEL = "claude-opus-5-5";
+// Sonnet: about half the cost of Opus; quality holds for this job at the effort set below.
+const MODEL = "claude-sonnet-5-5";
 
 export const TURN_CAP = 20;
 // A twin may not end the chat on its own before this turn (red flags excepted).
@@ -191,7 +192,8 @@ async function runTwinConversationTurn({
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
     max_iterations: 6,
-    system: systemPrompt,
+    // The system prompt is the large, stable part of every turn: cache it.
+    system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
     tools: [updateLedger, flagRedFlag, endConversation],
     messages,
   });

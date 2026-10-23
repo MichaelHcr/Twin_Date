@@ -9,7 +9,9 @@ import { z } from "zod";
 // in reports.card_json (migration 0012), so each report is summarized once.
 
 const client = new Anthropic();
-const MODEL = "claude-opus-5-5";
+// Haiku: a short summary or extraction. Haiku has no server-side refusal fallback,
+// so a refusal is handled in code below.
+const MODEL = "claude-haiku-5-5";
 
 export const MatchCardSchema = z.object({
   headline: z
@@ -57,8 +59,6 @@ export async function ensureMatchCard(admin: SupabaseClient, conversationId: str
     model: MODEL,
     max_tokens: 2000,
     output_config: { effort: "low", format: betaZodOutputFormat(MatchCardSchema) },
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
     system: SYSTEM_PROMPT,
     messages: [
       {

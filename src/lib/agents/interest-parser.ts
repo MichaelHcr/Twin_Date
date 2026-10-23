@@ -9,7 +9,9 @@ import { INTEREST_CATEGORIES, OTHER_INTERESTS, splitItems, type Interest } from 
 // fails, the items fall back to a plain split on commas.
 
 const client = new Anthropic();
-const MODEL = "claude-opus-5-5";
+// Haiku: a short summary or extraction. Haiku has no server-side refusal fallback,
+// so a refusal is handled in code below.
+const MODEL = "claude-haiku-5-5";
 
 const ParsedSchema = z.object({
   categories: z.array(
@@ -40,8 +42,6 @@ export async function parseInterests(picks: Interest[]): Promise<Interest[]> {
       model: MODEL,
       max_tokens: 4000,
       output_config: { effort: "low", format: betaZodOutputFormat(ParsedSchema) },
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
       system: SYSTEM_PROMPT,
       messages: [
         {

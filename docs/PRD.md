@@ -87,11 +87,12 @@ All requirements below are in scope for the Oct 22 demo. Items planned for later
 
 ## Agent architecture
 
-Eight agents do the preparation and people make every choice: deciding on the report page and writing every real message.
+Nine agents do the preparation and people make every choice: deciding on the report page and writing every real message.
 
 | Stage | Agent | What it does | How |
 | --- | --- | --- | --- |
 | Build the twin | Interviewer | Fills gaps and gets the user talking | ReAct loop with tools: get_profile_status, save_interview_fact, finish_interview |
+| Build the twin | Interest parser | Turns typed interests into short items that can be matched | Structured output; falls back to splitting on commas |
 | Build the twin | Profile Checker | Summarizes what the interview added; lists contradictions with the form | Structured output |
 | Build the twin | Persona Builder | Writes the twin's voice and summary | Structured output |
 | Screen | Scout | Ranks candidates that pass the hard filters | Filters in code, then structured output |
@@ -110,7 +111,10 @@ Design rules:
 - Isolation: each twin sees only its own facts, its own private notes and the transcript, never names or contact details. Twins talk as "Member A" and "Member B".
 - Twins read facts from the profile form and interview facts, never from the persona card, so locked facts always come from the user.
 - The Match card and Chat topics agents read only what both people can see (the report, the twins' chat, the real chat), never the twins' private notes, and cache what they write.
-- Model: claude-opus-5-5 with effort low for chat and medium for the Persona Builder; a request the model declines is retried on a fallback model. Target: plan quotas keep model cost under about 30% of each plan's price (to be measured).
+- Models, chosen per agent for cost: Claude Opus 5.5 for the Judge and Persona Builder (quality matters most, one call each); Claude Sonnet 5.5 for the twins, Interviewer, Scout and Profile Checker (about half the price); Claude Haiku 5.5 for the Match card, Chat topics and Interest parser (short summaries and extraction, a small fraction of the price). Effort is low for chat and medium for the Judge, Persona Builder and Profile Checker.
+- The twin and interview chats use prompt caching, so their long system prompts are billed at a fraction of the price after the first request.
+- A request Opus or Sonnet declines is retried on a fallback model. Haiku has no fallback, so its features degrade to a plain version instead (for example, interests split on commas).
+- Target: plan quotas keep model cost under about 30% of each plan's price (to be measured).
 
 ## Privacy, safety and consent
 
