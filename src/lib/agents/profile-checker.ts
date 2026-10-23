@@ -11,7 +11,8 @@ import { TOPICS } from "@/lib/profile-topics";
 // can review and reconcile them. Runs as the signed-in user.
 
 const client = new Anthropic();
-const MODEL = "claude-opus-5-5";
+// Sonnet: about half the cost of Opus; quality holds for this job at the effort set below.
+const MODEL = "claude-sonnet-5-5";
 
 export const CheckSchema = z.object({
   summary: z

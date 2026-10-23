@@ -10,7 +10,9 @@ import { z } from "zod";
 // Cached in chat_topics (migration 0014) until someone sends a new message.
 
 const client = new Anthropic();
-const MODEL = "claude-opus-5-5";
+// Haiku: a short summary or extraction. Haiku has no server-side refusal fallback,
+// so a refusal is handled in code below.
+const MODEL = "claude-haiku-5-5";
 
 export const TopicSchema = z.object({
   about: z.string().describe("What it's about, 2-8 words, e.g. 'the birria place on 3rd'"),
@@ -72,8 +74,6 @@ export async function ensureChatTopics(
     model: MODEL,
     max_tokens: 3000,
     output_config: { effort: "low", format: betaZodOutputFormat(TopicsSchema) },
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
     system: SYSTEM_PROMPT,
     messages: [
       {

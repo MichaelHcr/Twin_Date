@@ -9,7 +9,8 @@ import { TOPICS } from "@/lib/profile-topics";
 // then writes its next chat message.
 
 const client = new Anthropic();
-const MODEL = "claude-opus-5-5";
+// Sonnet: about half the cost of Opus; quality holds for this job at the effort set below.
+const MODEL = "claude-sonnet-5-5";
 
 // Sent as the first user turn so the conversation always starts with "user".
 // It is never stored or shown.
@@ -150,6 +151,8 @@ export async function runInterviewerTurn({
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
     max_iterations: 8,
+    // The chat only grows, so each turn reuses the cached prompt and history so far.
+    cache_control: { type: "ephemeral" },
     system: SYSTEM_PROMPT,
     tools: [getProfileStatus, saveInterviewFact, finishInterview],
     messages: [{ role: "user", content: KICKOFF }, ...history],

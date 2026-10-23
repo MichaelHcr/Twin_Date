@@ -48,7 +48,7 @@ flowchart TB
         RT["Realtime<br/>live chat"]
     end
 
-    C["Claude API<br/>claude-opus-5-5"]
+    C["Claude API<br/>Opus, Sonnet, Haiku"]
     STR["Stripe<br/>Checkout, webhook, portal"]
 
     U -- "pages and fetch" --> SRV
@@ -94,20 +94,27 @@ flowchart TD
 
 ## Agents
 
-All agents run on Claude (`claude-opus-5-5`) through the Anthropic TypeScript SDK, in
-[`src/lib/agents`](src/lib/agents).
+All agents run on Claude through the Anthropic TypeScript SDK, in
+[`src/lib/agents`](src/lib/agents). Each agent uses the cheapest model that does its job
+well: Opus 5.5 where quality matters most and calls are rare, Sonnet 5.5 for the chats,
+and Haiku 5.5 for short summaries and extraction.
 
-| Agent | What it does | How it works |
-|---|---|---|
-| Interviewer | Fills profile gaps and gets the user talking | ReAct loop with tools: `get_profile_status`, `save_interview_fact`, `finish_interview` |
-| Profile Checker | Summarizes what the interview added, lists contradictions with the form | Structured output |
-| Persona Builder | Writes the twin's persona card and texting style | Structured output |
-| Scout | Picks the next match | Hard filters in code, then Claude ranks the remaining candidates |
-| Twin | Speaks as the user in first person | ReAct loop in twin-to-twin chats, with tools: `update_ledger` (private notes), `flag_red_flag`, `end_conversation` |
-| Orchestrator | Runs a twin-to-twin conversation | Plain code, not an LLM: alternates turns, caps the chat at 20 turns, stops on a red flag |
-| Judge | Scores a finished chat (0-100) and writes a report for each person | Structured output; reads the transcript and both twins' private notes |
-| Match card | Turns a report into a one-line headline and tags | Structured output, cached per report |
-| Chat topics | Suggests topics when a real chat goes quiet | Structured output, based on the twins' first chat |
+| Agent | What it does | How it works | Model |
+|---|---|---|---|
+| Interviewer | Fills profile gaps and gets the user talking | ReAct loop with tools: `get_profile_status`, `save_interview_fact`, `finish_interview` | Sonnet 5.5 |
+| Interest parser | Turns typed interests into short items that can be matched | Structured output; falls back to splitting on commas | Haiku 5.5 |
+| Profile Checker | Summarizes what the interview added, lists contradictions with the form | Structured output | Sonnet 5.5 |
+| Persona Builder | Writes the twin's persona card and texting style | Structured output | Opus 5.5 |
+| Scout | Picks the next match | Hard filters in code, then Claude ranks the remaining candidates | Sonnet 5.5 |
+| Twin | Speaks as the user in first person | ReAct loop in twin-to-twin chats, with tools: `update_ledger` (private notes), `flag_red_flag`, `end_conversation` | Sonnet 5.5 |
+| Orchestrator | Runs a twin-to-twin conversation | Plain code, not an LLM: alternates turns, caps the chat at 20 turns, stops on a red flag | (none) |
+| Judge | Scores a finished chat (0-100) and writes a report for each person | Structured output; reads the transcript and both twins' private notes | Opus 5.5 |
+| Match card | Turns a report into a one-line headline and tags | Structured output, cached per report | Haiku 5.5 |
+| Chat topics | Suggests topics when a real chat goes quiet | Structured output, based on the twins' first chat | Haiku 5.5 |
+
+The twin and interview chats use prompt caching: their long system prompts (and, for the
+interview, the chat so far) are re-sent every turn, and cached tokens cost a fraction of the
+normal price.
 
 Agents prepare; people decide. No agent says yes or sends a message on a real person's behalf.
 
@@ -122,8 +129,9 @@ Rules that must hold are enforced in code, not only in prompts:
 - The interview can't finish until the user has sent at least 6 messages, so the twin has
   enough of their writing to copy their voice.
 - Each turn is saved before the next one starts, so a chat resumes where it left off after
-  a failure. Users see a readable error with a Retry button, and a request that a model
-  declines is retried on a fallback model.
+  a failure. Users see a readable error with a Retry button. A request that Opus or Sonnet
+  declines is retried on a fallback model; Haiku has no fallback, so its features (match card,
+  chat topics, interest parsing) degrade to a plain version instead.
 
 ## Security and privacy
 
@@ -154,7 +162,7 @@ Stripe's customer portal.
 | Requirement | Where |
 |---|---|
 | React | Next.js 16 App Router with React 19 (`src/app`) |
-| Multiple agents, including ReAct | 8 Claude agents plus the Orchestrator; Interviewer and Twin use a ReAct tool loop (`src/lib/agents`) |
+| Multiple agents, including ReAct | 9 Claude agents plus the Orchestrator; Interviewer and Twin use a ReAct tool loop (`src/lib/agents`) |
 | Authentication | Supabase Auth with email magic link and Google (`src/app/login`, `src/app/auth`, `src/proxy.ts`) |
 | Payments | Stripe Checkout, webhook and customer portal (`src/app/api/stripe`, `src/lib/billing.ts`, `/pricing`) |
 | Publicly deployed | Vercel: https://twin-date.vercel.app |
@@ -164,7 +172,8 @@ Stripe's customer portal.
 - **Frontend and server:** Next.js 16 (App Router, Cache Components), React 19, TypeScript,
   Tailwind CSS v4
 - **Data:** Supabase Postgres, Auth, Storage (photos) and Realtime (chat)
-- **AI:** Claude via `@anthropic-ai/sdk`, with Zod for tool inputs and structured outputs
+- **AI:** Claude (Opus 5.5, Sonnet 5.5, Haiku 5.5) via `@anthropic-ai/sdk`, with Zod for tool inputs
+  and structured outputs, and prompt caching for the chats
 - **Payments:** Stripe (test mode)
 - **Hosting:** Vercel
 

@@ -58,6 +58,8 @@ The demo has to show that twins are faithful, critical rather than agreeable, an
 
 Twin Date is a Next.js 16 app on Vercel. Supabase provides sign-in, Postgres with row-level security, private photo storage and realtime chat. Claude powers the agents, and Stripe handles payments. API keys never leave the server.
 
+Each agent uses the cheapest Claude model that does its job well: Opus 5.5 for the Judge and Persona Builder, where quality matters most and each runs once; Sonnet 5.5 for the twins, the Interviewer, the Scout and the Profile Checker; and Haiku 5.5 for short summaries and extraction. The twin and interview chats use prompt caching, because their long system prompts are re-sent on every turn.
+
 ```mermaid
 flowchart TB
     U["Browser<br/>React pages"]
@@ -86,18 +88,19 @@ flowchart TB
 
 *Figure 1. System architecture.*
 
-### Eight agents and one orchestrator
+### Nine agents and one orchestrator
 
-| Agent | Job | How it works |
-|---|---|---|
-| Interviewer | Fills profile gaps and gets the user talking | ReAct loop with tools to read the profile, save facts and finish |
-| Profile Checker | Summarizes what the interview added; lists contradictions with the form | Structured output |
-| Persona Builder | Writes the twin's voice and summary | Structured output |
-| Scout | Picks the next match | Hard filters in code, then Claude ranks |
-| Twin | Speaks as the user on a first chat | ReAct loop with private notes, red-flag and end-chat tools |
-| Judge | Scores the chat 0-100 and writes each reader's report | Structured output |
-| Match card | One-line headline and tags for the Matches grid | Structured output, cached |
-| Chat topics | Suggests a twins' thread when a real chat goes quiet | Structured output, cached |
+| Agent | Job | How it works | Model |
+|---|---|---|---|
+| Interviewer | Fills profile gaps and gets the user talking | ReAct loop with tools to read the profile, save facts and finish | Sonnet 5.5 |
+| Interest parser | Turns typed interests into short items that can be matched | Structured output | Haiku 5.5 |
+| Profile Checker | Summarizes what the interview added; lists contradictions with the form | Structured output | Sonnet 5.5 |
+| Persona Builder | Writes the twin's voice and summary | Structured output | Opus 5.5 |
+| Scout | Picks the next match | Hard filters in code, then Claude ranks | Sonnet 5.5 |
+| Twin | Speaks as the user on a first chat | ReAct loop with private notes, red-flag and end-chat tools | Sonnet 5.5 |
+| Judge | Scores the chat 0-100 and writes each reader's report | Structured output | Opus 5.5 |
+| Match card | One-line headline and tags for the Matches grid | Structured output, cached | Haiku 5.5 |
+| Chat topics | Suggests a twins' thread when a real chat goes quiet | Structured output, cached | Haiku 5.5 |
 
 The **Orchestrator** is deliberately plain code, not an LLM. It alternates the two twins' turns, caps a chat at 20 turns, and stops when a twin raises a red flag.
 
@@ -139,7 +142,7 @@ A seed script asks Claude to design 20 pairs of synthetic users, 10 with a plant
 - **Secrets:** the Claude, Stripe and Supabase secret keys are server-only environment variables in Vercel, never sent to the browser.
 - **Database:** 16 numbered SQL migrations create the tables, row-level security policies, storage buckets and realtime publication. Photos are shown only through short-lived signed links after a mutual yes.
 - **Payments:** Stripe Checkout in test mode with three plans by weekly twin chats: Free (3), Plus at $9.99 a month (15) and Pro at $24.99 a month (40). Only a signature-checked webhook can change a user's plan; paying users can switch plans with prorated billing and cancel in Stripe's portal.
-- **Reliability:** agent errors become readable messages with a Retry button, a request the model declines falls back to another model, and every twin turn is saved before the next one starts.
+- **Reliability:** agent errors become readable messages with a Retry button, a request Opus or Sonnet declines falls back to another model (Haiku features degrade to a plain version instead), and every twin turn is saved before the next one starts.
 
 ## 7. Next steps
 
