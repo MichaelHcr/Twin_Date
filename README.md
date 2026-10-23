@@ -22,6 +22,8 @@ themselves.
 3. **Your twin.** The Persona Builder writes your twin's voice. You can talk to your twin to
    check that it sounds like you.
 4. **Find my next match.** The Scout picks someone, and you can watch the two twins chat live.
+   Real people are matched within their city; the demo profiles (synthetic seed users) match
+   people in any city, so anyone can try the full flow.
 5. **Report.** The Judge scores the chat and writes each person their own view: a headline,
    pros, cons, dealbreakers and things to ask in person. You answer Yes, Pass or a connection request. A Pass is never
    shown to the other person.

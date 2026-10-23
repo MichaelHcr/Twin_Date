@@ -25,8 +25,15 @@ export function single<T>(value: T | T[] | null | undefined): T | null {
 // matching compares only the name before the first comma, ignoring case and spaces.
 export function sameCity(a: string | null | undefined, b: string | null | undefined) {
   const name = (city: string | null | undefined) =>
-    (city ?? "").split(",")[0].trim().replace(/\s+/g, " ").toLowerCase();
+    // Split on a comma or a full-width comma ("Burlingame，CA"), as typed with a Chinese keyboard.
+    (city ?? "").split(/[,，]/)[0].trim().replace(/\s+/g, " ").toLowerCase();
   return name(a) !== "" && name(a) === name(b);
+}
+
+// Demo profiles (seed users) all live in one city, so they match people anywhere and
+// testers in other cities still get matches. Real people only match within their city.
+export function cityFits(candidate: { city: string | null; is_seed: boolean }, myCity: string | null) {
+  return candidate.is_seed || sameCity(candidate.city, myCity);
 }
 
 // The Judge writes "{match}" for the other person in each view: "this match" until
