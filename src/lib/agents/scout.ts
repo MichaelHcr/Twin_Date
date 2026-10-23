@@ -3,7 +3,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { interestFit, readInterests, type Interest } from "@/lib/interests";
-import { sameCity } from "@/lib/matches";
+import { cityFits } from "@/lib/matches";
 import { isInterestedIn } from "@/lib/profile-topics";
 
 // The Scout (PRD: Agent architecture). Hard filters run in code: mutual gender
@@ -24,6 +24,7 @@ type Profile = {
   age_max: number;
   city: string;
   goal: string;
+  is_seed: boolean;
 };
 
 const PickSchema = z.object({
@@ -80,7 +81,7 @@ async function loadInterests(admin: SupabaseClient, userIds: string[]) {
 export async function scoutMatches(admin: SupabaseClient, userId: string, limit = 1) {
   const { data: me } = await admin
     .from("profiles")
-    .select("user_id, birthdate, gender, seeking, age_min, age_max, city, goal")
+    .select("user_id, birthdate, gender, seeking, age_min, age_max, city, goal, is_seed")
     .eq("user_id", userId)
     .single<Profile>();
   if (!me) throw new Error("Profile not found.");
@@ -89,7 +90,7 @@ export async function scoutMatches(admin: SupabaseClient, userId: string, limit 
   const [{ data: pool }, { data: past }, { data: built }] = await Promise.all([
     admin
       .from("profiles")
-      .select("user_id, birthdate, gender, seeking, age_min, age_max, city, goal")
+      .select("user_id, birthdate, gender, seeking, age_min, age_max, city, goal, is_seed")
       .eq("onboarding_complete", true)
       .neq("user_id", userId)
       .returns<Profile[]>(),
@@ -108,7 +109,7 @@ export async function scoutMatches(admin: SupabaseClient, userId: string, limit 
       !met.has(p.user_id) &&
       isInterestedIn(me.seeking, p.gender) &&
       isInterestedIn(p.seeking, me.gender) &&
-      sameCity(p.city, me.city) &&
+      cityFits(p, me.city) &&
       hasTwin.has(p.user_id) &&
       age >= me.age_min &&
       age <= me.age_max &&

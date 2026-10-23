@@ -52,7 +52,7 @@ All requirements below are in scope for the Oct 22 demo. Items planned for later
 
 ### Matching and twin chats
 
-- Scout: hard filters in code (gender both ways, both age ranges, goal, city, has a twin, not met before), then Claude ranks the rest.
+- Scout: hard filters in code (gender both ways, both age ranges, goal, city, has a twin, not met before), then Claude ranks the rest. Demo profiles skip the city filter, so testers anywhere get matches; real people only match within their city. City names match before the first comma (half- or full-width), ignoring case.
 - Twin-to-twin chat: up to 20 turns, one turn per request while the match page is open; a red flag ends it early. Each turn is saved, so a closed page resumes where it left off.
 - The weekly quota per plan limits how many matches you can find.
 
