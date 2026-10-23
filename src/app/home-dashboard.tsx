@@ -63,6 +63,11 @@ export async function HomeDashboard({ supabase, userId }: { supabase: SupabaseCl
             ? "Your twin hasn't had a first chat yet."
             : `${chats} first ${chats === 1 ? "chat" : "chats"} by your twin.`}
         </p>
+        {requests > 0 && (
+          <Waiting>
+            {requests} {requests === 1 ? "person" : "people"} sent you a request
+          </Waiting>
+        )}
         {yourCall > 0 && <Waiting>{yourCall} waiting for your yes or pass</Waiting>}
         <div className="mt-auto flex flex-col items-start gap-3 pt-6">
           <FindMatchButton />
@@ -96,11 +101,6 @@ export async function HomeDashboard({ supabase, userId }: { supabase: SupabaseCl
         {unreadMessages > 0 && (
           <Waiting>
             {unreadMessages} new {unreadMessages === 1 ? "message" : "messages"}
-          </Waiting>
-        )}
-        {requests > 0 && (
-          <Waiting>
-            {requests} connection {requests === 1 ? "request" : "requests"} waiting
           </Waiting>
         )}
         <div className="mt-auto pt-6">

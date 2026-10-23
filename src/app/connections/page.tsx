@@ -4,12 +4,13 @@ import { Avatar } from "@/components/avatar";
 import { KnownFor, ShortTime } from "@/components/local-time";
 import { requireUser } from "@/lib/auth";
 import { loadChatSummaries } from "@/lib/chat";
-import { loadDecisionStates, loadRevealedProfiles, NO_DECISION, wantsToMeet } from "@/lib/decisions";
+import { loadDecisionStates, loadRevealedProfiles, NO_DECISION } from "@/lib/decisions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BTN_PRIMARY, CARD, COLUMN, DOT_UNREAD, LABEL, PAGE, STORY_RING, TITLE } from "@/lib/ui";
 
-// The inbox, like Instagram DMs: a row of new matches you haven't messaged yet
-// and requests waiting for an answer, then your chats, most recent first.
+// The inbox, like Instagram DMs: a row of new matches you haven't messaged yet,
+// then your chats, most recent first. Requests waiting for your answer live on
+// the Matches page, at the top of "To review".
 export default function ConnectionsPage() {
   return (
     <main className={PAGE}>
@@ -35,11 +36,9 @@ async function Inbox() {
   if (error) return <p className="text-red-600">{error.message}</p>;
 
   const connected: { id: string; otherId: string }[] = [];
-  const requests: string[] = [];
   for (const c of (data ?? []) as Row[]) {
     const state = states.get(c.id) ?? NO_DECISION;
     if (state.connected) connected.push({ id: c.id, otherId: c.user_a === user.id ? c.user_b : c.user_a });
-    else if (state.theyRequested && !wantsToMeet(state.mine)) requests.push(c.id);
   }
   const admin = createAdminClient();
   const [profiles, { data: decided }] =
@@ -73,7 +72,7 @@ async function Inbox() {
         <h1 className={TITLE}>Connections</h1>
       </div>
 
-      {connected.length === 0 && requests.length === 0 ? (
+      {connected.length === 0 ? (
         <div className="px-5 pb-8 pt-4 text-center">
           <p className="font-semibold text-black dark:text-zinc-50">Your first connection is a yes away</p>
           <p className="mt-1 text-sm text-zinc-500">
@@ -85,7 +84,7 @@ async function Inbox() {
         </div>
       ) : (
         <>
-          {(fresh.length > 0 || requests.length > 0) && (
+          {fresh.length > 0 && (
             <div className="border-b border-zinc-200 pb-4 dark:border-zinc-800">
               <p className={`px-5 ${LABEL}`}>New matches</p>
               <ul className="mt-3 flex gap-4 overflow-x-auto px-5">
@@ -106,16 +105,6 @@ async function Inbox() {
                     </li>
                   );
                 })}
-                {requests.map((id) => (
-                  <li key={id} className="shrink-0">
-                    <Link href={`/matches/${id}`} className="flex w-16 flex-col items-center gap-1 text-center">
-                      <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-zinc-300 text-lg text-zinc-400 dark:border-zinc-700">
-                        ?
-                      </span>
-                      <span className="w-full truncate text-sm text-zinc-600 dark:text-zinc-400">Request</span>
-                    </Link>
-                  </li>
-                ))}
               </ul>
             </div>
           )}
